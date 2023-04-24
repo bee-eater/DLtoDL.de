@@ -1,11 +1,18 @@
 package com.bee_eater.dltodlde;
 
+import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static android.os.Build.VERSION.SDK_INT;
+
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.Settings;
 import android.util.Log;
@@ -14,12 +21,18 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -31,41 +44,33 @@ import okhttp3.*;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int PERMISSION_REQUEST_CODE = 128;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Intent req = new Intent();
-        req.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-        //startActivity(req);
+        if(!checkPermission()){
+            requestPermission();
+        }
+
+        List<DLDive> DLDives = Collections.<DLDive>emptyList();
 
         Intent intent = getIntent();
         String intentType = intent.getType();
-
-        SQLiteDatabase db = SQLiteDatabase.openDatabase("/storage/emulated/0/Diving/Logbook.sql", null, 0);
-        String query = "SELECT * FROM Logbook";
-        Cursor res = db.rawQuery(query,null);
-        res.moveToFirst();
-        if (res.moveToFirst()) {
-            while (!res.isAfterLast()) {
-                String Number = res.getString(1);
-                String Country = res.getString(5);
-                String Depth = res.getString(12);
-                res.moveToNext();
-            }
-        }
-        String query_result = res.toString();
-        res.close();
-
         if (Objects.equals(intentType, "application/x-sql")){
-            //InputStream istream = getContentResolver().openInputStream(Uri.parse(intent.getDataString()));
             Uri file = intent.getData();
             String filepath = file.getPath();
             try {
-
+                DLDives = DivingLog_LoadDiveLogFile("/storage/emulated/0/Diving/Logbook.sql");
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            }
+            if (DLDives.size() > 0){
+                for(DLDive d : DLDives){
+                    Log.d("FOUND DIVE", d.toString());
+                }
             }
 
         }
@@ -110,6 +115,33 @@ public class MainActivity extends AppCompatActivity {
         Ed.commit();
     }
 
+
+    private boolean checkPermission() {
+        if (SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
+        } else {
+            int read_permission = ContextCompat.checkSelfPermission(this, READ_EXTERNAL_STORAGE);
+            int write_permission = ContextCompat.checkSelfPermission(this, WRITE_EXTERNAL_STORAGE);
+            return read_permission == PackageManager.PERMISSION_GRANTED && write_permission == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    private void requestPermission() {
+        if (SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.addCategory("android.intent.category.DEFAULT");
+                intent.setData(Uri.parse(String.format("package:%s",getApplicationContext().getPackageName())));
+                startActivity(intent);
+            } catch (Exception e) {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivity(intent);
+            }
+        } else {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+        }
+    }
 
     //====================================================================================================
     //====================================================================================================
@@ -245,6 +277,69 @@ public class MainActivity extends AppCompatActivity {
             Log.e("DiveLogsXml_CheckLogin", e.toString());
             return false;
         }
+    }
+
+
+    //====================================================================================================
+    //====================================================================================================
+    // DIVINGLOG FUNCTIONS
+    //====================================================================================================
+    //====================================================================================================
+    private List<DLDive> DivingLog_LoadDiveLogFile(String file){
+
+        // Init empty dive list
+        List<DLDive> DLDives = new ArrayList<DLDive>();
+
+        // Load database from file and query all dives from logbook
+        SQLiteDatabase db = SQLiteDatabase.openDatabase(file, null, 0);
+        String query = "SELECT * FROM Logbook";
+        Cursor res = db.rawQuery(query,null);
+
+        // Parse results
+        res.moveToFirst();
+        if (res.moveToFirst()) {
+            while (!res.isAfterLast()) {
+
+                // Create temp dive
+                DLDive dive = new DLDive();
+
+                // Loop over all columns, get value and add to dive
+                for (Integer i = 0; i < res.getColumnCount(); i++) {
+                    // Get column name
+                    String colName = res.getColumnName(i);
+                    // Get column type in order to use correct function
+                    Integer colType = res.getType(i);
+                    // Get column value based on type
+                    Object colValue;
+                    switch(colType){
+                        case 0: colValue = null; break;// NULL value, ignore
+                        case 1: colValue = res.getInt(i); break;
+                        case 2: colValue = res.getDouble(i); break;
+                        case 3: colValue = res.getString(i); break;
+                        default:
+                            Log.d("COLUMN", "Found type :: " + colType.toString());
+                            colValue = "ERR";
+                    }
+
+                    // Add value to dive by member name
+                    try {
+                        dive.setMemberByName(colName, colValue);
+                    } catch (NoSuchFieldException e) {
+                        Log.d("QUERY", e.toString());
+                    } catch (IllegalAccessException e) {
+                        Log.d("QUERY", e.toString());
+                    }
+                    Log.d("COLUMN",colName + " :: " + colType.toString() + " :: " + String.valueOf(colValue));
+                }
+                // add dives to dive list
+                DLDives.add(dive);
+                res.moveToNext();
+            }
+        }
+        res.close();
+        db.close();
+
+        return DLDives;
     }
 
     //====================================================================================================
