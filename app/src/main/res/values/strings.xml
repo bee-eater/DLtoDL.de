@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">DLtoDL.de</string>
+    <string name="app_main_info">Enter your login data for Divelogs.de below. Export your logbook from Divelogs via Backup function (.sql) and open it from your file explorer. If it\'s not automatically opened with DLtoDL.de use the "Open with" menu.</string>
+    <string name="divelogs_de_username">Divelogs.de username</string>
+    <string name="divelogs_de_password">Divelogs.de password</string>
+    <string name="app_main_btnLogin">Save / Test</string>
+</resources>
