@@ -20,6 +20,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import static com.bee_eater.dltodlde.Constants.*;
+
 //====================================================================================================
 //====================================================================================================
 // DIVELOGS API FUNCTIONS
@@ -115,14 +117,16 @@ public class DiveLogsApi {
 
             Headers responseHeaders = response.headers();
             for (int i = 0; i < responseHeaders.size(); i++) {
-                Log.d("DiveLogs_GetXmlFromHttpsPost", responseHeaders.name(i) + ": " + responseHeaders.value(i));
+                if (VERBOSE) Log.v("DLAPI", responseHeaders.name(i) + ": " + responseHeaders.value(i));
             }
 
             assert response.body() != null;
-            return response.body().string();
+            String rsp = response.body().string();
+            if (DEBUG) Log.d("DLAPI", rsp);
+            return rsp;
 
-        } catch (Exception ex){
-            Log.e("DiveLogs_GetXmlFromHttpsPost", ex.toString());
+        } catch (Exception e){
+             if (ERROR) Log.e("DLAPI", "Error getting response from OkHttpClient: " + e);
             return "";
         }
     }
@@ -155,7 +159,7 @@ public class DiveLogsApi {
             return res;
 
         } catch (Exception e) {
-            Log.e("DiveLogsXml_CheckLogin", e.toString());
+            if (ERROR) Log.e("DLAPI", "Error getting login info from xml: " + e);
             return false;
         }
     }
@@ -182,8 +186,8 @@ public class DiveLogsApi {
                 return "";
             }
 
-        } catch (Exception ex){
-            Log.d("DiveLogsApi", "Exception getting user image from xml answer!");
+        } catch (Exception e){
+            if (ERROR) Log.e("DLAPI", "Exception getting user image from xml answer: " + e);
             return "";
         }
     }

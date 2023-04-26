@@ -9,14 +9,20 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Objects;
 
+import static com.bee_eater.dltodlde.Constants.*;
 
-public class MainActivity extends AppCompatActivity implements DiveLogFileDoneListener {
+
+public class MainActivity extends AppCompatActivity implements DivingLogFileDoneListener {
 
     private static final int PERMISSION_REQUEST_CODE = 128;
     private DiveLogsApi DLApi = new DiveLogsApi();
@@ -77,8 +83,10 @@ public class MainActivity extends AppCompatActivity implements DiveLogFileDoneLi
      * Initialize some things when app is opened with a new intent
      */
     private void initStuff() {
+        // Create new diving log connector instance
         DLC = new DivingLogConnector(this);
-        DLC.setProgressBar((ProgressBar)findViewById(R.id.progressBar));
+        // Assign progress bar from GUI so progress can be shown by connector instance
+        DLC.setGuiConnector((ProgressBar)findViewById(R.id.prbDLCFileLoading), (TextView)findViewById(R.id.txtProgressNr), (TextView)findViewById(R.id.txtProgressPercentage));
     }
 
 
@@ -127,6 +135,7 @@ public class MainActivity extends AppCompatActivity implements DiveLogFileDoneLi
             try {
                 DLC.LoadDiveLogFile(file);
             } catch (Exception e) {
+                if (ERROR) Log.e("MAIN", e.toString());
                 throw new RuntimeException(e);
             }
 
@@ -134,11 +143,18 @@ public class MainActivity extends AppCompatActivity implements DiveLogFileDoneLi
     }
 
     @Override
-    public void LoadDiveLogFileDone() {
-        if (DLC.DLDives.size() > 0){
-            Toast.makeText(this,"Opened file: " + DLC.DLDives.size(), Toast.LENGTH_LONG).show();
-            for(DLDive d : DLC.DLDives){
-                Log.d("FOUND DIVE", d.toString());
+    public void LoadDivingLogFileDone() {
+        if (DLC.DLDives != null) {
+            if (DLC.DLDives.size() > 0) {
+                Toast.makeText(this, "Opened file: " + DLC.DLDives.size(), Toast.LENGTH_LONG).show();
+                for (DivingLogDive d : DLC.DLDives) {
+                    try {
+                        JSONObject json = new JSONObject(d.toString());
+                        if (VERBOSE) Log.v("MAIN", json.toString(4));
+                    } catch (JSONException err) {
+                        if (ERROR) Log.e("MAIN", err.toString());
+                    }
+                }
             }
         }
     }
@@ -168,6 +184,7 @@ public class MainActivity extends AppCompatActivity implements DiveLogFileDoneLi
             if(res) {
                 Toast.makeText(this,"Login successfull! Data saved!", Toast.LENGTH_LONG).show();
                 SaveDLLoginData(user, pass);
+                if (DEBUG) Log.d("MAIN", "Found user image: " + DLApi.UserImageURL);
             } else {
                 Toast.makeText(this,"Login error! Please check your credentials!", Toast.LENGTH_LONG).show();
             }
@@ -198,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements DiveLogFileDoneLi
         if(Objects.equals(res, "1")){
             Toast.makeText(this,"Login error! Please check your credentials!", Toast.LENGTH_LONG).show();
         } else {
-            //Log.d("on_btnTest_clicked", res);
+            if (DEBUG) Log.d("MAIN", "Test_DownloadDives(): " + res);
             Toast.makeText(this,"Got your dives!", Toast.LENGTH_LONG).show();
         }
     }

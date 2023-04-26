@@ -1,13 +1,14 @@
 package com.bee_eater.dltodlde;
 
-import android.app.Activity;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,14 +17,18 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.bee_eater.dltodlde.Constants.*;
+
 public class DivingLogConnector {
 
     private static final String DB_NAME = "/AppDB.sql";
     private ProgressBar progressBar = null;
+    private TextView progressNr = null;
+    private TextView progressAbs = null;
     private MainActivity main;
-    public List<DLDive> DLDives;
+    public List<DivingLogDive> DLDives;
     private static String tmpDBFile;
-    private DiveLogFileDoneListener listener;
+    private DivingLogFileDoneListener listener;
 
     /**
      * Construtor for connector instance
@@ -34,16 +39,18 @@ public class DivingLogConnector {
         // Get path for temporary db in app specific files
         tmpDBFile = main.getBaseContext().getFilesDir().toString() + DB_NAME;
         // Set callback function :: passed is the class object which implements the interface and
-        // therefor has the overriding callback function --> "this" in main class
-        this.listener = (DiveLogFileDoneListener)Activity;
+        // therefor has the overriding callback function --> pass "this" in main class, cast here
+        this.listener = (DivingLogFileDoneListener)Activity;
     }
 
     /**
      * Set progress bar element in order to show progress on GUI
      * @param pg ProgressBar instance
      */
-    public void setProgressBar(ProgressBar pg){
+    public void setGuiConnector(ProgressBar pg, TextView nr, TextView progress){
         this.progressBar = pg;
+        this.progressAbs = progress;
+        this.progressNr = nr;
     }
 
     public void LoadDiveLogFile(Uri file){
@@ -58,13 +65,9 @@ public class DivingLogConnector {
         @Override
         public void run() {
             try {
-                if(progressBar != null)
-                    main.runOnUiThread(new Runnable() {@Override public void run() {progressBar.setVisibility(View.VISIBLE);}});
-
+                setGuiVisibility(View.VISIBLE);
                 DLDives = DivingLog_LoadDiveLogFile(tmpDBFile);
-
-                if(progressBar != null)
-                    main.runOnUiThread(new Runnable() {@Override public void run() {progressBar.setVisibility(View.INVISIBLE);}});
+                setGuiVisibility(View.INVISIBLE);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -76,9 +79,21 @@ public class DivingLogConnector {
         }
     }
 
+    private void setGuiVisibility(int vis){
+        if(progressBar != null) {
+            main.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    LinearLayout lay = (LinearLayout) progressBar.getParent();
+                    lay.setVisibility(vis);
+                }
+            });
+        }
+    }
+
     private void onLoadDiveLogFileDone (){
         deleteDataBase();
-        listener.LoadDiveLogFileDone();
+        listener.LoadDivingLogFileDone();
     }
 
     /**
@@ -87,7 +102,7 @@ public class DivingLogConnector {
      */
     public void copyDataBase(Uri file) {
 
-        Log.i("Database", "New database is being copied to device!");
+        if (VERBOSE) Log.v("DLCONN", "New database is being copied to device!");
         byte[] buffer = new byte[1024];
         OutputStream fsOutput;
         int length;
@@ -102,7 +117,7 @@ public class DivingLogConnector {
             fsOutput.close();
             fsOutput.flush();
             fsInput.close();
-            Log.i("Database", "New database has been copied to device!");
+            if (VERBOSE) Log.v("DLCONN", "New database has been copied to device!");
         }
         catch(Exception e)
         {
@@ -118,17 +133,17 @@ public class DivingLogConnector {
         File fDelete = new File(tmpDBFile);
         if (fDelete.exists()) {
             if (fDelete.delete()) {
-                Log.d("Database", "Database deleted from app storage!");
+                if (VERBOSE) Log.v("DLCONN", "Database deleted from app storage!");
             } else {
-                Log.d("Database", "File not deleted!");
+                if (VERBOSE) Log.v("DLCONN", "File not deleted!");
             }
         }
     }
 
-    private List<DLDive> DivingLog_LoadDiveLogFile(String file){
+    private List<DivingLogDive> DivingLog_LoadDiveLogFile(String file){
 
         // Init empty dive list
-        List<DLDive> DLDives = new ArrayList<DLDive>();
+        List<DivingLogDive> DLDives = new ArrayList<DivingLogDive>();
 
         // Load database from file and query all dives from logbook
         SQLiteDatabase db = SQLiteDatabase.openDatabase(file, null, 0);
@@ -144,7 +159,7 @@ public class DivingLogConnector {
             while (!res.isAfterLast()) {
 
                 // Create temp dive
-                DLDive dive = new DLDive();
+                DivingLogDive dive = new DivingLogDive();
 
                 // Loop over all columns, get value and add to dive
                 for (int i = 0; i < res.getColumnCount(); i++) {
@@ -160,7 +175,7 @@ public class DivingLogConnector {
                         case Cursor.FIELD_TYPE_FLOAT: colValue = res.getDouble(i); break;
                         case Cursor.FIELD_TYPE_STRING: colValue = res.getString(i); break;
                         default:
-                            Log.d("COLUMN", "Found type :: " + Integer.toString(colType));
+                            if (VERBOSE) Log.v("DLCONN", "Found column type :: " + Integer.toString(colType));
                             colValue = "ERR";
                     }
 
@@ -168,23 +183,40 @@ public class DivingLogConnector {
                     try {
                         dive.setMemberByName(colName, colValue);
                     } catch (NoSuchFieldException | IllegalAccessException e) {
-                        Log.d("QUERY", e.toString());
+                        if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
                     }
-                    Log.d("COLUMN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
+                    if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
                 }
                 // add dives to dive list
                 DLDives.add(dive);
                 res.moveToNext();
                 currCnt++;
-                if(progressBar != null){
-                    progressBar.setProgress((currCnt * 100/ results));
-                }
+                int progress = (currCnt * 100/ results);
+                setGuiProcess(progress, currCnt, results);
+
             }
         }
         res.close();
         db.close();
 
         return DLDives;
+    }
+
+    private void setGuiProcess(int progress, int done, int total){
+        main.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(progressBar != null){
+                    progressBar.setProgress(progress);
+                }
+                if(progressNr != null){
+                    progressNr.setText("(" + done + " of " + total + ")");
+                }
+                if(progressAbs != null){
+                    progressAbs.setText(progress + " %");
+                }
+            }
+        });
     }
 
 }

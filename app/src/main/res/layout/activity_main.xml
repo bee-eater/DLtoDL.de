@@ -63,16 +63,52 @@
             app:cornerRadius="10px"
             />
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="30dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginRight="30dp"
-            android:progressDrawable="@drawable/custom_progress"
-            android:visibility="invisible" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="invisible">
 
+            <ProgressBar
+                android:id="@+id/prbDLCFileLoading"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="30dp"
+                android:progressDrawable="@drawable/custom_progress" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txtProgressPercentage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAlignment="viewEnd" />
+
+                <TextView
+                    android:id="@+id/lblProgressSlash"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="0"
+                    android:text="/"
+                    android:textAlignment="center" />
+
+                <TextView
+                    android:id="@+id/txtProgressNr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAlignment="viewStart" />
+
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
