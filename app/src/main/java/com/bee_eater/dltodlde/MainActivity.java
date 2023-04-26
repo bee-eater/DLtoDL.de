@@ -1,5 +1,6 @@
 package com.bee_eater.dltodlde;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -8,10 +9,15 @@ import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONException;
@@ -198,7 +204,29 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      */
     public void on_btnTest_clicked(View v){
         Toast.makeText(this,"Dang!", Toast.LENGTH_LONG).show();
+
+        // Start sub activity with its launcher
+        Intent myIntent = new Intent(this, DivesSelection.class);
+        DivesSelectionLauncher.launch(myIntent);
+
     }
+
+    /**
+     * ActivityResultLauncher for DivesSelection-Dialog
+     */
+    ActivityResultLauncher<Intent> DivesSelectionLauncher = registerForActivityResult(
+        new ActivityResultContracts.StartActivityForResult(),
+        new ActivityResultCallback<ActivityResult>() {
+            @Override
+            public void onActivityResult(ActivityResult result) {
+                if (result.getResultCode() == 2) {
+                    // There are no request codes
+                    Intent data = result.getData();
+                    String message = data.getStringExtra("MESSAGE");
+                    Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG).show();
+                }
+            }
+        });
 
 
     //====================================================================================================
