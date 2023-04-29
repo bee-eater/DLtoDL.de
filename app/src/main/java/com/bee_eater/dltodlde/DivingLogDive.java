@@ -5,6 +5,11 @@ import androidx.annotation.NonNull;
 import java.lang.reflect.Field;
 
 public class DivingLogDive {
+
+    // Other stuff used in app
+    public Boolean isSelected = Boolean.FALSE;
+
+    // DivingLog parameters read from sql
     public Integer ID;
     public Integer Number;
     public String Divedate;

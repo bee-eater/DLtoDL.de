@@ -1,6 +1,5 @@
 package com.bee_eater.dltodlde;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -8,8 +7,10 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     private DiveLogsApi DLApi = new DiveLogsApi();
     private DivingLogConnector DLC;
 
+
     /**
      * Base onCreate action, called when App is first opened
      * @param savedInstanceState If the activity is being re-initialized after
@@ -52,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         // Init stuff
         initStuff();
-        setupGUI();
+        setupGUI_Main();
 
         // When App is opened, check if it opened a file by checking intent type (contains the mime file type)
         Intent intent = getIntent();
@@ -72,6 +74,20 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         checkIntentForSQLFile(intent);
     }
 
+    @Override
+    public void onContentChanged(){
+        final ViewGroup viewGroup = (ViewGroup) ((ViewGroup) this
+                .findViewById(android.R.id.content)).getChildAt(0);
+
+        if(viewGroup.getId() == R.id.activity_main) {
+            setupGUI_Main();
+        } else if (viewGroup.getId() == R.id.view_diveSelection) {
+            setupGUI_DiveSelect();
+        }
+
+    }
+
+
 
     //====================================================================================================
     //====================================================================================================
@@ -81,8 +97,17 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     /**
      * Function that set's up the GUI (get saved data etc.)
      */
-    private void setupGUI(){
+    private ListView divesList;
+    private ArrayAdapter<DivingLogDive> divesListAdapter;
+
+    private void setupGUI_Main(){
         LoadDLLoginData();
+    }
+
+    private void setupGUI_DiveSelect(){
+        divesList = findViewById(R.id.lstDivesList);
+        DiveSelectionListAdapter citiesAdapter = new DiveSelectionListAdapter(this,DLC.DLDives);
+        divesList.setAdapter(citiesAdapter);
     }
 
     /**
@@ -161,6 +186,9 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                         if (ERROR) Log.e("MAIN", err.toString());
                     }
                 }
+                // TODO: Get dives from divelogs.de
+                // TODO: Create list with checkboxes and infos about found dives (based on datetime...)
+                // TODO: Create conversion from DivingLog to DLD format
             }
         }
     }
@@ -203,12 +231,12 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      * @param v View calling the event
      */
     public void on_btnTest_clicked(View v){
-        Toast.makeText(this,"Dang!", Toast.LENGTH_LONG).show();
+        setContentView(R.layout.view_diveselection);
+    }
 
-        // Start sub activity with its launcher
-        Intent myIntent = new Intent(this, DivesSelection.class);
-        DivesSelectionLauncher.launch(myIntent);
-
+    public void on_btnBackToHome_clicked(View v){
+        setContentView(R.layout.activity_main);
+        Toast.makeText(this, "Selected: " + DLC.DLDives.get(0).isSelected.toString(), Toast.LENGTH_SHORT).show();
     }
 
     /**
