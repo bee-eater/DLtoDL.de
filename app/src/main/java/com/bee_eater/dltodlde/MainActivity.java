@@ -1,5 +1,8 @@
 package com.bee_eater.dltodlde;
 
+import com.bee_eater.dltodlde.DiveLogsApi.*;
+import static com.bee_eater.dltodlde.Constants.*;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -24,16 +27,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Objects;
-
-import static com.bee_eater.dltodlde.Constants.*;
 
 
 public class MainActivity extends AppCompatActivity implements DivingLogFileDoneListener {
 
-    private static final int PERMISSION_REQUEST_CODE = 128;
     private DiveLogsApi DLApi = new DiveLogsApi();
     private DivingLogConnector DLC;
+
+    private ArrayList<DiveLogsDive> diveLogsDives;
+
+    private ListView divesList;
+    private ArrayAdapter<DivingLogDive> divesListAdapter;
 
 
     /**
@@ -76,9 +82,11 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     @Override
     public void onContentChanged(){
+
         final ViewGroup viewGroup = (ViewGroup) ((ViewGroup) this
                 .findViewById(android.R.id.content)).getChildAt(0);
 
+        // Load matching GUI data based on loaded content
         if(viewGroup.getId() == R.id.activity_main) {
             setupGUI_Main();
         } else if (viewGroup.getId() == R.id.view_diveSelection) {
@@ -97,8 +105,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     /**
      * Function that set's up the GUI (get saved data etc.)
      */
-    private ListView divesList;
-    private ArrayAdapter<DivingLogDive> divesListAdapter;
 
     private void setupGUI_Main(){
         LoadDLLoginData();
@@ -106,14 +112,16 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     private void setupGUI_DiveSelect(){
         divesList = findViewById(R.id.lstDivesList);
-        DiveSelectionListAdapter citiesAdapter = new DiveSelectionListAdapter(this,DLC.DLDives);
-        divesList.setAdapter(citiesAdapter);
+        divesListAdapter = new DiveSelectionListAdapter(this, DLC.DLDives);
+        divesList.setAdapter(divesListAdapter);
     }
 
     /**
      * Initialize some things when app is opened with a new intent
      */
     private void initStuff() {
+        // Make sure we're on base page
+        setContentView(R.layout.activity_main);
         // Create new diving log connector instance
         DLC = new DivingLogConnector(this);
         // Assign progress bar from GUI so progress can be shown by connector instance
@@ -167,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                 DLC.LoadDiveLogFile(file);
             } catch (Exception e) {
                 if (ERROR) Log.e("MAIN", e.toString());
-                throw new RuntimeException(e);
+                Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
             }
 
         }
@@ -182,14 +190,39 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                     try {
                         JSONObject json = new JSONObject(d.toString());
                         if (VERBOSE) Log.v("MAIN", json.toString(4));
-                    } catch (JSONException err) {
-                        if (ERROR) Log.e("MAIN", err.toString());
+                    } catch (JSONException e) {
+                        if (ERROR) Log.e("MAIN", e.toString());
+                        Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
                     }
                 }
                 // TODO: Get dives from divelogs.de
-                // TODO: Create list with checkboxes and infos about found dives (based on datetime...)
+                diveLogsLoadDives();
+                // Load list content, contentChanged event sets all required adapters etc...
+                setContentView(R.layout.view_diveselection);
                 // TODO: Create conversion from DivingLog to DLD format
             }
+        }
+    }
+
+
+    public void diveLogsLoadDives(){
+
+        EditText tinDLUsername = findViewById(R.id.tinDLUsername);
+        EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
+        String user = tinDLUsername.getText().toString();
+        String pass = pwdDLPassword.getText().toString();
+        diveLogsDives = new ArrayList<>();
+        String res = DLApi.GetDives(user, pass, diveLogsDives);
+        if(Objects.equals(res, "-1")){
+            // Login unsuccessful -> Toast
+            Toast.makeText(this,"Login error! Please check your credentials!", Toast.LENGTH_LONG).show();
+        } else if (Objects.equals(res, "0")) {
+            // Everything fine --> Compare DiveLogs to DivingLog dives and show list
+            if (DEBUG) Log.d("MAIN", "diveLogsLoadDives(): " + diveLogsDives.size());
+        } else {
+            // Exception trying to get dives from DiveLogs.de --> Log and toast error
+            if (ERROR) Log.e("MAIN", "Exception in DLApi.GetDives(): " + res);
+            Toast.makeText(this, "Exception in DLApi.GetDives()", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -255,25 +288,5 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                 }
             }
         });
-
-
-    //====================================================================================================
-    //====================================================================================================
-    // TEST FUNCTIONS
-    //====================================================================================================
-    //====================================================================================================
-    public void Test_DownloadDives(View v){
-        EditText tinDLUsername = findViewById(R.id.tinDLUsername);
-        EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
-        String user = tinDLUsername.getText().toString();
-        String pass = pwdDLPassword.getText().toString();
-        String res = DLApi.GetDives(user, pass);
-        if(Objects.equals(res, "1")){
-            Toast.makeText(this,"Login error! Please check your credentials!", Toast.LENGTH_LONG).show();
-        } else {
-            if (DEBUG) Log.d("MAIN", "Test_DownloadDives(): " + res);
-            Toast.makeText(this,"Got your dives!", Toast.LENGTH_LONG).show();
-        }
-    }
 
 }

@@ -3,6 +3,7 @@ package com.bee_eater.dltodlde;
 import androidx.annotation.NonNull;
 
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 
 public class DivingLogDive {
 
@@ -13,6 +14,7 @@ public class DivingLogDive {
     public Integer ID;
     public Integer Number;
     public String Divedate;
+    public LocalDateTime DiveDateDT;
     public String Entrytime;
     public String Surfint;
     public String Country;

@@ -9,11 +9,14 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -187,8 +190,17 @@ public class DivingLogConnector {
                     }
                     if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
                 }
-                // add dives to dive list
-                DLDives.add(dive);
+                // Convert date and entry time to LocalDateTime variable (for later comparison to DiveLogs.de list)
+                try {
+                    String tmpDT = dive.Divedate + " " + dive.Entrytime;
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                    dive.DiveDateDT = LocalDateTime.parse(tmpDT, dtf);
+                    // Only add dive if dt conversion was successful
+                    DLDives.add(dive);
+                } catch (Exception e) {
+                    if (ERROR) Log.e("DLCONN", "Exception getting divetime: " + e);
+                    Toast.makeText(main, e.toString(), Toast.LENGTH_LONG).show();
+                }
                 res.moveToNext();
                 currCnt++;
                 int progress = (currCnt * 100/ results);
