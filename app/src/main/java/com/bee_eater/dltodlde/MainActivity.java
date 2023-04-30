@@ -3,6 +3,7 @@ package com.bee_eater.dltodlde;
 import com.bee_eater.dltodlde.DiveLogsApi.*;
 import static com.bee_eater.dltodlde.Constants.*;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -27,8 +28,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 public class MainActivity extends AppCompatActivity implements DivingLogFileDoneListener {
@@ -40,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     private ListView divesList;
     private ArrayAdapter<DivingLogDive> divesListAdapter;
+
+    private String tmpDir = "currUpload";
 
 
     /**
@@ -68,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     }
 
+
     /**
      * Override onNetIntent to get correct intent when resuming the activity
      * (wasn't closed and reopened by clicking .sql file in file explorer)
@@ -80,6 +95,11 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         checkIntentForSQLFile(intent);
     }
 
+
+    /**
+     * If content changes (setContentView()) this listener will be executed
+     * and the matching function for the corresponding content is called.
+     */
     @Override
     public void onContentChanged(){
 
@@ -96,7 +116,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     }
 
 
-
     //====================================================================================================
     //====================================================================================================
     // APP FUNCTIONS
@@ -105,16 +124,31 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     /**
      * Function that set's up the GUI (get saved data etc.)
      */
-
     private void setupGUI_Main(){
-        LoadDLLoginData();
+
+        ArrayList<String> up = LoadDLLoginData();
+
+        if(up != null){
+            if (up.size() == 2){
+                EditText tinDLUsername = findViewById(R.id.tinDLUsername);
+                tinDLUsername.setText(up.get(0));
+                EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
+                pwdDLPassword.setText(up.get(1));
+            }
+        }
+
     }
 
+
+    /**
+     * Function that set's up the list showing the dives to select for upload
+     */
     private void setupGUI_DiveSelect(){
         divesList = findViewById(R.id.lstDivesList);
         divesListAdapter = new DiveSelectionListAdapter(this, DLC.DLDives);
         divesList.setAdapter(divesListAdapter);
     }
+
 
     /**
      * Initialize some things when app is opened with a new intent
@@ -132,21 +166,22 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     /**
      * Function that loads login data from shared preferences and puts it into the input fields of the app
      */
-    private void LoadDLLoginData(){
+    private ArrayList<String> LoadDLLoginData(){
+        ArrayList<String> up = new ArrayList<>();
         SharedPreferences sp1 = this.getSharedPreferences("DLLogin", MODE_PRIVATE);
         if(sp1 != null) {
             String user = sp1.getString("user", null);
-            if (user != null) {
-                EditText tinDLUsername = findViewById(R.id.tinDLUsername);
-                tinDLUsername.setText(user);
+            if (user != null){
+                up.add(user);
             }
             String pass = sp1.getString("pass", null);
             if (pass != null) {
-                EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
-                pwdDLPassword.setText(pass);
+                up.add(pass);
             }
         }
+        return up;
     }
+
 
     /**
      * Function saves login data to shared preferences
@@ -160,6 +195,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         Ed.putString("pass", pass);
         Ed.apply();
     }
+
 
     /**
      * Function that checks the open / resume intent for a sql file and calls the loading function
@@ -181,6 +217,11 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         }
     }
 
+
+    /**
+     * Event listener through interface implementation that is called
+     * when the DivingLog sql file is successfully loaded.
+     */
     @Override
     public void LoadDivingLogFileDone() {
         if (DLC.DLDives != null) {
@@ -195,16 +236,56 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                         Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
                     }
                 }
-                // TODO: Get dives from divelogs.de
+                // Load dives from DiveLogs.de
                 diveLogsLoadDives();
+                // Compare DiveLogs list to DivingLog list
+                compareDiveLists();
                 // Load list content, contentChanged event sets all required adapters etc...
                 setContentView(R.layout.view_diveselection);
+                // Jump to end of list
+                divesList.setSelection(divesListAdapter.getCount() - 1);
                 // TODO: Create conversion from DivingLog to DLD format
             }
         }
     }
 
 
+    /**
+     * Compare DivesLogs.de list to DivingLog list and create diff info
+     */
+    public void compareDiveLists(){
+
+        for (DivingLogDive log: DLC.DLDives){
+            Integer cnt = 0;
+
+            for (DiveLogsDive web: diveLogsDives){
+                if(log.DiveDateDT.isEqual(web.DiveDateDT)){
+                    log.DiveLogsIndex = cnt;
+                    log.ListInfoText = "Dive already uploaded!";
+                    break;
+                }
+                cnt++;
+            }
+
+            // No dive was found
+            if(log.DiveLogsIndex == -1){
+                // Dive is not older then 7 days...
+                if(log.DiveDateDT.isBefore(LocalDateTime.now()) && !log.DiveDateDT.isBefore(LocalDateTime.now().minusDays( 7 ))) {
+                    // Preselect
+                    log.isSelected = true;
+                    log.ListInfoText = "Not uploaded yet!";
+                } else {
+                    log.ListInfoText = "Not uploaded yet! (> 7 days)";
+                }
+            }
+        }
+
+    }
+
+
+    /**
+     * Load list of dives from DiveLogs.de
+     */
     public void diveLogsLoadDives(){
 
         EditText tinDLUsername = findViewById(R.id.tinDLUsername);
@@ -259,6 +340,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     }
 
+
     /**
      * Event: btnTest was clicked on GUI
      * @param v View calling the event
@@ -267,10 +349,107 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         setContentView(R.layout.view_diveselection);
     }
 
-    public void on_btnBackToHome_clicked(View v){
+
+    /**
+     * Event: btnDiveListCancel was clicked on dive list GUI
+     * @param v View calling the event
+     */
+    public void on_btnDiveListCancel_clicked(View v){
         setContentView(R.layout.activity_main);
-        Toast.makeText(this, "Selected: " + DLC.DLDives.get(0).isSelected.toString(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Aborted!", Toast.LENGTH_SHORT).show();
     }
+
+
+    /**
+     * Event: btnDiveListUpload was clicked on dive list GUI
+     * @param v View calling the event
+     */
+    public void on_btnDiveListUpload_clicked(View v){
+
+        // Prepare by initializing tmpDir
+        File xmldir = getDir(tmpDir,Context.MODE_PRIVATE);
+        if(xmldir.exists()){
+            for (File child : xmldir    .listFiles())
+                child.delete();
+            xmldir.delete();
+            xmldir.mkdir();
+        }
+        xmldir.mkdir();
+
+        // Write all files to internal store
+        Integer cnt = 0;
+        for (DivingLogDive d: DLC.DLDives){
+            if(d.isSelected){
+                String xml = d.toDLD();
+                if(VERBOSE) Log.d("MAIN", xml);
+
+                // Get file with index and write xml content
+                File xmlf = new File(xmldir, cnt + ".xml");
+                try {
+                    FileOutputStream stream = new FileOutputStream(xmlf);
+                    try {
+                        stream.write(xml.getBytes());
+                    } finally {
+                        stream.close();
+                    }
+                }
+                catch (Exception e) {
+                    if(ERROR) Log.e("MAIN", "XML write exception: " + e.toString());
+                }
+                cnt++;
+            }
+        }
+
+        // zip all files in folder
+        String xmlfname = xmldir.toPath() + "/upload.zip";
+        try {
+            FileOutputStream f = new FileOutputStream(xmlfname);
+            ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(f));
+            byte buf[] = new byte[2048];
+
+            // Loop through xmldir and add all .xml files to zip
+            for (File child : xmldir.listFiles()){
+                if(child.getPath().endsWith(".xml")) {
+                    // Get file content
+                    FileInputStream fi = null;
+                    fi = new FileInputStream(child.getPath());
+                    // Remove path from filename
+                    String fname = child.getPath().substring(child.getPath().lastIndexOf("/")+1);
+                    // Add new entry to zip
+                    zip.putNextEntry(new ZipEntry(fname));
+                    // Write data from FileInputStream to zip
+                    int len;
+                    while ((len = fi.read(buf)) > 0) {
+                        zip.write(buf, 0, len);
+                    }
+                    // Close FileInputStream and current zip entry
+                    fi.close();
+                    zip.closeEntry();
+                }
+            }
+            // Write everything and close everything up
+            zip.flush();
+            zip.close();
+        } catch(Exception e) {
+            if(ERROR) Log.e("MAIN", "XML write exception: " + e.toString());
+        }
+
+        // Upload zip file
+        ArrayList<String> up = LoadDLLoginData();
+        if (up != null) {
+            if(up.size() == 2) {
+                File xmlf = new File(xmldir, "upload.zip");
+                String res = DLApi.UploadDives(up.get(0), up.get(1), xmlf);
+                Toast.makeText(this, res, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "Missing credentials?!", Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(this, "Missing credentials?!", Toast.LENGTH_LONG).show();
+        }
+
+    }
+
 
     /**
      * ActivityResultLauncher for DivesSelection-Dialog

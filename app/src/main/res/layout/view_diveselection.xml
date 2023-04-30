@@ -12,14 +12,30 @@
         tools:layout_editor_absoluteX="0dp"
         tools:layout_editor_absoluteY="0dp">
 
-        <Button
-            android:id="@+id/btnReturnToHome"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|center"
-            android:layout_marginTop="20dp"
-            android:onClick="on_btnBackToHome_clicked"
-            android:text="Back" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnDiveListCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|center"
+                android:layout_marginTop="20dp"
+                android:onClick="on_btnDiveListCancel_clicked"
+                android:text="Cancel" />
+
+            <Button
+                android:id="@+id/btnDiveListUpload"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|center"
+                android:layout_marginTop="20dp"
+                android:onClick="on_btnDiveListUpload_clicked"
+                android:text="Upload" />
+
+        </LinearLayout>
 
         <ListView
             android:id="@+id/lstDivesList"

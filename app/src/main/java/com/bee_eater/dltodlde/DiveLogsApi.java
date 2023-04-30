@@ -1,7 +1,6 @@
 package com.bee_eater.dltodlde;
 
 import android.util.Log;
-import android.widget.Toast;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -9,6 +8,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -23,6 +23,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import okhttp3.FormBody;
 import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -45,7 +47,7 @@ public class DiveLogsApi {
         public LocalDateTime lastModifiedDT;
         public String diveNumber;
         public String date;
-        public LocalDateTime dateDT;
+        public LocalDateTime DiveDateDT;
     }
 
     /**
@@ -71,7 +73,7 @@ public class DiveLogsApi {
         //  <units>metric</units>
         //  <userimage>https://www.divelogs.de/userprofiles/16142Marcel512.jpg</userimage>
         //</userauthentification>
-        String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/xml_authenticate_user.php");
+        String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/xml_authenticate_user.php",null);
         Boolean loginSuccessful = Boolean.FALSE;
         if(Objects.equals(httpResponse, "")){
 
@@ -102,7 +104,7 @@ public class DiveLogsApi {
         //    <date divelogsId="3536237" lastModified="2023-02-11 23:02:19" diveNumber="401">11.02.2023 12:47</date>
         //  </DiveDates>
         //</DiveDateReader>
-        String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/xml_available_dives.php");
+        String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/xml_available_dives.php", null);
         if(CheckLogin(httpResponse)){
             ArrayList<DiveLogsDive> dld = new ArrayList<>();
             try {
@@ -113,12 +115,12 @@ public class DiveLogsApi {
                 input.close();
 
                 NodeList nDates = doc.getElementsByTagName("date");
-                DiveLogsDive dive = new DiveLogsDive();
                 for (Node n : iterable(nDates)) {
+                    DiveLogsDive dive = new DiveLogsDive();
                     // Get main node text
                     DateTimeFormatter fDate = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
                     dive.date = n.getTextContent();
-                    dive.dateDT = LocalDateTime.parse(dive.date, fDate);
+                    dive.DiveDateDT = LocalDateTime.parse(dive.date, fDate);
                     // Get attributes and read them
                     NamedNodeMap nm = n.getAttributes();
                     dive.divelogsId = nm.getNamedItem("divelogsId").getTextContent();
@@ -144,16 +146,27 @@ public class DiveLogsApi {
      * @param user Username
      * @param pass Password
      * @param API_Url API URL to make the call to
+     * @param zip Zip file containing dives to upload
      * @return xml response from DiveLogs.de
      */
-    private String GetXmlFromHttpsPost(String user, String pass, String API_Url){
+    private String GetXmlFromHttpsPost(String user, String pass, String API_Url, File zip){
 
         OkHttpClient client = new OkHttpClient();
 
-        RequestBody formBody = new FormBody.Builder()
-                .add("user", user)
-                .add("pass", pass)
-                .build();
+        RequestBody formBody;
+        if (zip == null) {
+            formBody = new FormBody.Builder()
+                    .add("user", user)
+                    .add("pass", pass)
+                    .build();
+        } else {
+            formBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                    .addFormDataPart("userfile", zip.getName(),
+                            RequestBody.create(zip,MediaType.parse("application/xml")))
+                    .addFormDataPart("user", user)
+                    .addFormDataPart("pass", pass)
+                    .build();
+        }
 
         Request request = new Request.Builder()
                 .url(API_Url)
@@ -240,6 +253,85 @@ public class DiveLogsApi {
             return "";
         }
     }
+
+
+    /**
+     * Upload zip file with POST to DiveLogs.de API
+     * @param xmlfname Path to the zip file to upload
+     */
+    public String UploadDives(String user, String pass, File xmlzip) {
+
+        //https://divelogs.de/DivelogsDirectImport.php
+        //"user" (mandatory) with your username
+        //"pass" (mandatory) with your password
+        //"userfile" (mandatory) with your DLD file
+        //"dldfile" (mandatory) zip file containing xml dives
+        //<divelogsDataImport version="1.0">
+        //  <Login>succeeded</Login>
+        //  <FileCopy>succeeded</FileCopy>
+        //  <entered>0</entered>
+        //  <skipped>0</skipped>
+        //  <updated>0</updated>
+        //  <invalid>0</invalid>
+        //  <profiles>0</profiles>
+        //</divelogsDataImport>
+
+        String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/DivelogsDirectImport.php",xmlzip);
+        if(Objects.equals(httpResponse, "")){
+            return "";
+        } else {
+            try {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                ByteArrayInputStream input = new ByteArrayInputStream(
+                        httpResponse.getBytes(StandardCharsets.UTF_8));
+                Document doc = builder.parse(input);
+                input.close();
+
+                NodeList nLogin = doc.getElementsByTagName("Login");
+                Boolean Login = false;
+                if(nLogin.getLength() > 0) {
+                    Login = Objects.equals(nLogin.item(0).getTextContent(), "succeeded");
+                }
+
+                NodeList nFileCopy = doc.getElementsByTagName("FileCopy");
+                Boolean FileCopy = false;
+                if(nFileCopy.getLength() > 0) {
+                    FileCopy = Objects.equals(nFileCopy.item(0).getTextContent(), "succeeded");
+                }
+
+                NodeList nEntered = doc.getElementsByTagName("entered");
+                Integer entered = 0;
+                if(nEntered.getLength() > 0) {
+                    entered = Integer.valueOf(nEntered.item(0).getTextContent());
+                }
+
+                NodeList nSkipped = doc.getElementsByTagName("skipped");
+                Integer skipped = 0;
+                if(nSkipped.getLength() > 0) {
+                    skipped = Integer.valueOf(nSkipped.item(0).getTextContent());
+                }
+
+                NodeList nUpdated = doc.getElementsByTagName("updated");
+                Integer updated = 0;
+                if(nUpdated.getLength() > 0) {
+                    updated = Integer.valueOf(nUpdated.item(0).getTextContent());
+                }
+
+                NodeList nInvalid = doc.getElementsByTagName("invalid");
+                Integer invalid = 0;
+                if(nInvalid.getLength() > 0) {
+                    invalid = Integer.valueOf(nInvalid.item(0).getTextContent());
+                }
+
+                return "Login: " + Login + " | Upload: " + FileCopy + " | Entered: " + entered + " | Skipped: " + skipped + " | Updated: " + updated + " | Invalid: " + invalid;
+            } catch (Exception e){
+                return "";
+            }
+        }
+
+    }
+
 
     /**
      * Helper for iterating through NodeList (org.w3c.com)

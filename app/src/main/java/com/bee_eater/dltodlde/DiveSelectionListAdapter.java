@@ -1,6 +1,7 @@
 package com.bee_eater.dltodlde;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,8 +22,11 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
 
     private static class ViewHolder {
         CheckBox chkIsSelected;
-        TextView txtMainTitle;
-        TextView txtSubTitle;
+        TextView txtTitle;
+        TextView txtDate;
+        TextView txtDiveTime;
+        TextView txtDiveDepth;
+        TextView txtAddInfo;
     }
 
     public DiveSelectionListAdapter(Context context, List<DivingLogDive> items) {
@@ -58,8 +62,11 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
             LayoutInflater inflater = LayoutInflater.from(getContext());
             convertView = inflater.inflate(R.layout.layout_diveselection, parent, false);
             viewHolder.chkIsSelected = (CheckBox) convertView.findViewById(R.id.chkDiveSelected);
-            viewHolder.txtMainTitle = (TextView) convertView.findViewById(R.id.maintitle);
-            viewHolder.txtSubTitle = (TextView) convertView.findViewById(R.id.subtitle);
+            viewHolder.txtTitle = (TextView) convertView.findViewById(R.id.txtTitle);
+            viewHolder.txtDate = (TextView) convertView.findViewById(R.id.txtDate);
+            viewHolder.txtAddInfo = (TextView) convertView.findViewById(R.id.txtAddInfo);
+            viewHolder.txtDiveTime = (TextView) convertView.findViewById(R.id.txtDiveTime);
+            viewHolder.txtDiveDepth = (TextView) convertView.findViewById(R.id.txtDiveDepth);
 
             result=convertView;
 
@@ -73,11 +80,29 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
         result.startAnimation(animation);
         lastPosition = position;
 
+        // Color if already found!
+        if (dive.DiveLogsIndex != -1){ // green -> already uploaded?!
+            viewHolder.txtAddInfo.setTextColor(Color.GREEN);
+        } else { // blue -> not uploaded yet?!
+            viewHolder.txtAddInfo.setTextColor(Color.BLUE);
+        }
+
         viewHolder.chkIsSelected.setChecked(dive.isSelected);
         viewHolder.chkIsSelected.setOnClickListener(this);
         viewHolder.chkIsSelected.setTag(position);
-        viewHolder.txtMainTitle.setText(dive.ID + " - " + dive.City + ": " + dive.Place);
-        viewHolder.txtSubTitle.setText(dive.Divedate);
+        viewHolder.txtTitle.setText(dive.Number + " - " + dive.City + ": " + dive.Place);
+        viewHolder.txtDate.setText(dive.Divedate);
+        int minutes = dive.Divetime.intValue();
+        int seconds = (int)((dive.Divetime - minutes)*60);
+        String dt = String.valueOf(minutes);
+        dt += ":";
+        if (seconds < 10)
+            dt += "0";
+        dt += seconds + " min";
+        viewHolder.txtDiveTime.setText(dt);
+        viewHolder.txtDiveDepth.setText(String.format("%.2f", dive.Depth) + " m");
+        viewHolder.txtAddInfo.setText(dive.ListInfoText);
+
         // Return the completed view to render on screen
         return convertView;
     }
