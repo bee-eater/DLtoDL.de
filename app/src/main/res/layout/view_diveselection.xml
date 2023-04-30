@@ -12,17 +12,30 @@
         tools:layout_editor_absoluteX="0dp"
         tools:layout_editor_absoluteY="0dp">
 
+
+        <ListView
+            android:id="@+id/lstDivesList"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:paddingBottom="5dp"
+            android:layout_weight="1" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_horizontal"
+            android:background="@drawable/button_background"
+            android:layout_weight = "0">
 
             <Button
                 android:id="@+id/btnDiveListCancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|center"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginRight="5dp"
                 android:onClick="on_btnDiveListCancel_clicked"
                 android:text="Cancel" />
 
@@ -31,17 +44,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|center"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="5dp"
                 android:onClick="on_btnDiveListUpload_clicked"
                 android:text="Upload" />
 
         </LinearLayout>
-
-        <ListView
-            android:id="@+id/lstDivesList"
-            android:layout_width="match_parent"
-            android:layout_height="fill_parent"
-            android:layout_marginTop="20dp" />
 
 
     </LinearLayout>

@@ -72,7 +72,7 @@ public class DivingLogConnector {
             try {
                 setGuiVisibility(View.VISIBLE);
                 DLDives = DivingLog_LoadDiveLogFile(tmpDBFile);
-                setGuiVisibility(View.INVISIBLE);
+                setGuiVisibility(View.GONE);
             } catch (Exception e) {
                 e.printStackTrace();
             }

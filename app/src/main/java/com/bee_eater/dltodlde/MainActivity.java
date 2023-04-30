@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -122,15 +123,23 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     private void setupGUI_Main(){
 
         ArrayList<String> up = LoadDLLoginData();
+        EditText tinDLUsername = findViewById(R.id.tinDLUsername);
+        EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
         if (up.size() >= 2){
-            EditText tinDLUsername = findViewById(R.id.tinDLUsername);
             tinDLUsername.setText(up.get(0));
-            EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
             pwdDLPassword.setText(up.get(1));
             if(up.size() == 3){
                 LoadUserImage(up.get(2));
             }
         }
+        pwdDLPassword.setOnKeyListener((view, keyCode, keyEvent) -> {
+            //If the keyEvent is a key-down event on the "enter" button
+            if ((keyEvent.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                on_btnDLLogin_clicked(getCurrentFocus());
+                return true;
+            }
+            return false;
+        });
 
     }
 
