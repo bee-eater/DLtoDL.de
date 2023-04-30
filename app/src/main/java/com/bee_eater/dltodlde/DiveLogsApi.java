@@ -1,5 +1,9 @@
 package com.bee_eater.dltodlde;
 
+import static com.bee_eater.dltodlde.Constants.DEBUG;
+import static com.bee_eater.dltodlde.Constants.ERROR;
+import static com.bee_eater.dltodlde.Constants.VERBOSE;
+
 import android.util.Log;
 
 import org.w3c.dom.Document;
@@ -29,8 +33,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-
-import static com.bee_eater.dltodlde.Constants.*;
 
 //====================================================================================================
 //====================================================================================================
@@ -75,9 +77,7 @@ public class DiveLogsApi {
         //</userauthentification>
         String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/xml_authenticate_user.php",null);
         Boolean loginSuccessful = Boolean.FALSE;
-        if(Objects.equals(httpResponse, "")){
-
-        } else {
+        if(!Objects.equals(httpResponse, "")){
             loginSuccessful = CheckLogin(httpResponse);
             if (loginSuccessful) {
                 UserImageURL = GetUserImageURL(httpResponse);
@@ -106,7 +106,6 @@ public class DiveLogsApi {
         //</DiveDateReader>
         String httpResponse = GetXmlFromHttpsPost(user, pass, "https://divelogs.de/xml_available_dives.php", null);
         if(CheckLogin(httpResponse)){
-            ArrayList<DiveLogsDive> dld = new ArrayList<>();
             try {
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
@@ -192,6 +191,7 @@ public class DiveLogsApi {
         }
     }
 
+
     /**
      * Evaluates if xml answer from DiveLogs.de contains a successful login info
      * @param xml xml response from the api call
@@ -257,7 +257,7 @@ public class DiveLogsApi {
 
     /**
      * Upload zip file with POST to DiveLogs.de API
-     * @param xmlfname Path to the zip file to upload
+     * @param xmlzip Path to the zip file to upload
      */
     public String UploadDives(String user, String pass, File xmlzip) {
 
@@ -289,39 +289,39 @@ public class DiveLogsApi {
                 input.close();
 
                 NodeList nLogin = doc.getElementsByTagName("Login");
-                Boolean Login = false;
+                boolean Login = false;
                 if(nLogin.getLength() > 0) {
                     Login = Objects.equals(nLogin.item(0).getTextContent(), "succeeded");
                 }
 
                 NodeList nFileCopy = doc.getElementsByTagName("FileCopy");
-                Boolean FileCopy = false;
+                boolean FileCopy = false;
                 if(nFileCopy.getLength() > 0) {
                     FileCopy = Objects.equals(nFileCopy.item(0).getTextContent(), "succeeded");
                 }
 
                 NodeList nEntered = doc.getElementsByTagName("entered");
-                Integer entered = 0;
+                int entered = 0;
                 if(nEntered.getLength() > 0) {
-                    entered = Integer.valueOf(nEntered.item(0).getTextContent());
+                    entered = Integer.parseInt(nEntered.item(0).getTextContent());
                 }
 
                 NodeList nSkipped = doc.getElementsByTagName("skipped");
-                Integer skipped = 0;
+                int skipped = 0;
                 if(nSkipped.getLength() > 0) {
-                    skipped = Integer.valueOf(nSkipped.item(0).getTextContent());
+                    skipped = Integer.parseInt(nSkipped.item(0).getTextContent());
                 }
 
                 NodeList nUpdated = doc.getElementsByTagName("updated");
-                Integer updated = 0;
+                int updated = 0;
                 if(nUpdated.getLength() > 0) {
-                    updated = Integer.valueOf(nUpdated.item(0).getTextContent());
+                    updated = Integer.parseInt(nUpdated.item(0).getTextContent());
                 }
 
                 NodeList nInvalid = doc.getElementsByTagName("invalid");
-                Integer invalid = 0;
+                int invalid = 0;
                 if(nInvalid.getLength() > 0) {
-                    invalid = Integer.valueOf(nInvalid.item(0).getTextContent());
+                    invalid = Integer.parseInt(nInvalid.item(0).getTextContent());
                 }
 
                 return "Login: " + Login + " | Upload: " + FileCopy + " | Entered: " + entered + " | Skipped: " + skipped + " | Updated: " + updated + " | Invalid: " + invalid;
@@ -335,8 +335,8 @@ public class DiveLogsApi {
 
     /**
      * Helper for iterating through NodeList (org.w3c.com)
-     * @param nodeList
-     * @return
+     * @param nodeList NodeList to parse through...
+     * @return returns the item for iteration
      */
     public static Iterable<Node> iterable(final NodeList nodeList) {
         return () -> new Iterator<Node>() {

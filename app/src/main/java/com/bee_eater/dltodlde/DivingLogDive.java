@@ -238,7 +238,7 @@ public class DivingLogDive {
                 try {
                     String hours = this.Surfint.split(":")[0];
                     String minutes = this.Surfint.split(":")[1];
-                    surfint = Integer.valueOf(hours)*3600 + Integer.valueOf(minutes)*60;
+                    surfint = Integer.parseInt(hours)*3600 + Integer.parseInt(minutes)*60;
                 } catch (Exception e){
                     // nop
                 }
@@ -448,7 +448,7 @@ public class DivingLogDive {
                     // Get depths from strings [001100000000] = 1.1m
                     List<Double> Depths = new ArrayList<>();
                     for(String s: DepthProfile){
-                        Depths.add(Double.valueOf(s.substring(0,3) + "." + s.substring(3,4)));
+                        Depths.add(Double.valueOf(s.substring(0,3) + "." + s.charAt(3)));
                     }
                     for(Double d: Depths){
                         el = doc.createElement("SAMPLE");
@@ -467,9 +467,8 @@ public class DivingLogDive {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
-            String output = writer.getBuffer().toString(); //.replaceAll("\n|\r", "");
 
-            return output;
+            return writer.getBuffer().toString();
 
         } catch (Exception e){
             if (ERROR) Log.e("DivingLogDive.toDLD(): ", e.toString());

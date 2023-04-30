@@ -11,8 +11,6 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-import com.google.android.material.snackbar.Snackbar;
-
 import java.util.List;
 
 
@@ -39,8 +37,7 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
 
         int position=(Integer) v.getTag();
         CheckBox chkIsSelected = (CheckBox)v;
-        Object object= getItem(position);
-        DivingLogDive dive=(DivingLogDive) object;
+        DivingLogDive dive = getItem(position);
         if (v.getId() == R.id.chkDiveSelected) {
             dive.isSelected = chkIsSelected.isChecked();
         }
@@ -61,12 +58,12 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
             viewHolder = new ViewHolder();
             LayoutInflater inflater = LayoutInflater.from(getContext());
             convertView = inflater.inflate(R.layout.layout_diveselection, parent, false);
-            viewHolder.chkIsSelected = (CheckBox) convertView.findViewById(R.id.chkDiveSelected);
-            viewHolder.txtTitle = (TextView) convertView.findViewById(R.id.txtTitle);
-            viewHolder.txtDate = (TextView) convertView.findViewById(R.id.txtDate);
-            viewHolder.txtAddInfo = (TextView) convertView.findViewById(R.id.txtAddInfo);
-            viewHolder.txtDiveTime = (TextView) convertView.findViewById(R.id.txtDiveTime);
-            viewHolder.txtDiveDepth = (TextView) convertView.findViewById(R.id.txtDiveDepth);
+            viewHolder.chkIsSelected = convertView.findViewById(R.id.chkDiveSelected);
+            viewHolder.txtTitle = convertView.findViewById(R.id.txtTitle);
+            viewHolder.txtDate = convertView.findViewById(R.id.txtDate);
+            viewHolder.txtAddInfo = convertView.findViewById(R.id.txtAddInfo);
+            viewHolder.txtDiveTime = convertView.findViewById(R.id.txtDiveTime);
+            viewHolder.txtDiveDepth = convertView.findViewById(R.id.txtDiveDepth);
 
             result=convertView;
 

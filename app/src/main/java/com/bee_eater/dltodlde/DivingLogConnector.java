@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -43,7 +45,7 @@ public class DivingLogConnector {
         tmpDBFile = main.getBaseContext().getFilesDir().toString() + DB_NAME;
         // Set callback function :: passed is the class object which implements the interface and
         // therefor has the overriding callback function --> pass "this" in main class, cast here
-        this.listener = (DivingLogFileDoneListener)Activity;
+        this.listener = Activity;
     }
 
     /**
@@ -74,22 +76,15 @@ public class DivingLogConnector {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            handler.post(new Runnable() {
-                public void run() {
-                    onLoadDiveLogFileDone();
-                }
-            });
+            handler.post(DivingLogConnector.this::onLoadDiveLogFileDone);
         }
     }
 
     private void setGuiVisibility(int vis){
         if(progressBar != null) {
-            main.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    LinearLayout lay = (LinearLayout) progressBar.getParent();
-                    lay.setVisibility(vis);
-                }
+            main.runOnUiThread(() -> {
+                LinearLayout lay = (LinearLayout) progressBar.getParent();
+                lay.setVisibility(vis);
             });
         }
     }
@@ -112,7 +107,7 @@ public class DivingLogConnector {
         try
         {
             InputStream fsInput = main.getBaseContext().getContentResolver().openInputStream(file);
-            fsOutput = new FileOutputStream(tmpDBFile);
+            fsOutput = Files.newOutputStream(Paths.get(tmpDBFile));
             while((length = fsInput.read(buffer)) > 0)
             {
                 fsOutput.write(buffer, 0, length);
@@ -146,7 +141,7 @@ public class DivingLogConnector {
     private List<DivingLogDive> DivingLog_LoadDiveLogFile(String file){
 
         // Init empty dive list
-        List<DivingLogDive> DLDives = new ArrayList<DivingLogDive>();
+        List<DivingLogDive> DLDives = new ArrayList<>();
 
         // Load database from file and query all dives from logbook
         SQLiteDatabase db = SQLiteDatabase.openDatabase(file, null, 0);
@@ -215,18 +210,15 @@ public class DivingLogConnector {
     }
 
     private void setGuiProcess(int progress, int done, int total){
-        main.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(progressBar != null){
-                    progressBar.setProgress(progress);
-                }
-                if(progressNr != null){
-                    progressNr.setText("(" + done + " of " + total + ")");
-                }
-                if(progressAbs != null){
-                    progressAbs.setText(progress + " %");
-                }
+        main.runOnUiThread(() -> {
+            if(progressBar != null){
+                progressBar.setProgress(progress);
+            }
+            if(progressNr != null){
+                progressNr.setText("(" + done + " of " + total + ")");
+            }
+            if(progressAbs != null){
+                progressAbs.setText(progress + " %");
             }
         });
     }

@@ -1,11 +1,14 @@
 package com.bee_eater.dltodlde;
 
-import com.bee_eater.dltodlde.DiveLogsApi.*;
-import static com.bee_eater.dltodlde.Constants.*;
+import static com.bee_eater.dltodlde.Constants.DEBUG;
+import static com.bee_eater.dltodlde.Constants.ERROR;
+import static com.bee_eater.dltodlde.Constants.VERBOSE;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -14,30 +17,24 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.bee_eater.dltodlde.DiveLogsApi.DiveLogsDive;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.time.LocalDate;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -52,8 +49,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     private ListView divesList;
     private ArrayAdapter<DivingLogDive> divesListAdapter;
-
-    private String tmpDir = "currUpload";
 
 
     /**
@@ -127,13 +122,13 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     private void setupGUI_Main(){
 
         ArrayList<String> up = LoadDLLoginData();
-
-        if(up != null){
-            if (up.size() == 2){
-                EditText tinDLUsername = findViewById(R.id.tinDLUsername);
-                tinDLUsername.setText(up.get(0));
-                EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
-                pwdDLPassword.setText(up.get(1));
+        if (up.size() >= 2){
+            EditText tinDLUsername = findViewById(R.id.tinDLUsername);
+            tinDLUsername.setText(up.get(0));
+            EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
+            pwdDLPassword.setText(up.get(1));
+            if(up.size() == 3){
+                LoadUserImage(up.get(2));
             }
         }
 
@@ -159,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         // Create new diving log connector instance
         DLC = new DivingLogConnector(this);
         // Assign progress bar from GUI so progress can be shown by connector instance
-        DLC.setGuiConnector((ProgressBar)findViewById(R.id.prbDLCFileLoading), (TextView)findViewById(R.id.txtProgressNr), (TextView)findViewById(R.id.txtProgressPercentage));
+        DLC.setGuiConnector(findViewById(R.id.prbDLCFileLoading), findViewById(R.id.txtProgressNr), findViewById(R.id.txtProgressPercentage));
     }
 
 
@@ -178,6 +173,13 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             if (pass != null) {
                 up.add(pass);
             }
+            // Only add image if user / pass was there...
+            if (up.size() == 2) {
+                String img = sp1.getString("imgurl", null);
+                if (img != null) {
+                    up.add(img);
+                }
+            }
         }
         return up;
     }
@@ -188,12 +190,28 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      * @param user Username
      * @param pass Password
      */
-    private void SaveDLLoginData(String user, String pass){
+    private void SaveDLLoginData(String user, String pass, String img){
         SharedPreferences sp=getSharedPreferences("DLLogin", MODE_PRIVATE);
         SharedPreferences.Editor Ed=sp.edit();
         Ed.putString("user", user);
         Ed.putString("pass", pass);
+        Ed.putString("imgurl", img);
         Ed.apply();
+    }
+
+
+    /**
+     * Load user image to ImageView
+     */
+    private void LoadUserImage(String URL){
+        try {
+            InputStream in = new java.net.URL(URL).openStream();
+            Bitmap bmp = BitmapFactory.decodeStream(in);
+            ImageView imgUser = findViewById(R.id.imgUser);
+            imgUser.setImageBitmap(bmp);
+        } catch (Exception e){
+            if (ERROR) Log.e("MAIN", e.toString());
+        }
     }
 
 
@@ -256,7 +274,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     public void compareDiveLists(){
 
         for (DivingLogDive log: DLC.DLDives){
-            Integer cnt = 0;
+            int cnt = 0;
 
             for (DiveLogsDive web: diveLogsDives){
                 if(log.DiveDateDT.isEqual(web.DiveDateDT)){
@@ -325,28 +343,29 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         String pass = pwdDLPassword.getText().toString();
 
         if(Objects.equals(user, "")){
-            SaveDLLoginData("","");
+            SaveDLLoginData("","", "");
+            ImageView imgUser = findViewById(R.id.imgUser);
+            imgUser.setImageResource(android.R.color.transparent);
+            tinDLUsername.setText("");
+            pwdDLPassword.setText("");
             Toast.makeText(this,"Login data cleared!", Toast.LENGTH_LONG).show();
         } else {
             boolean res = DLApi.Login(user, pass);
             if(res) {
                 Toast.makeText(this,"Login successfull! Data saved!", Toast.LENGTH_LONG).show();
-                SaveDLLoginData(user, pass);
+                SaveDLLoginData(user, pass, DLApi.UserImageURL);
                 if (DEBUG) Log.d("MAIN", "Found user image: " + DLApi.UserImageURL);
+                try {
+                    LoadUserImage(DLApi.UserImageURL);
+                } catch (Exception e) {
+                    if(ERROR) Log.e("MAIN", "Error loading image: " + e);
+                }
+
             } else {
                 Toast.makeText(this,"Login error! Please check your credentials!", Toast.LENGTH_LONG).show();
             }
         }
 
-    }
-
-
-    /**
-     * Event: btnTest was clicked on GUI
-     * @param v View calling the event
-     */
-    public void on_btnTest_clicked(View v){
-        setContentView(R.layout.view_diveselection);
     }
 
 
@@ -367,105 +386,104 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     public void on_btnDiveListUpload_clicked(View v){
 
         // Prepare by initializing tmpDir
+        String tmpDir = "currUpload";
         File xmldir = getDir(tmpDir,Context.MODE_PRIVATE);
-        if(xmldir.exists()){
-            for (File child : xmldir    .listFiles())
-                child.delete();
-            xmldir.delete();
-            xmldir.mkdir();
-        }
-        xmldir.mkdir();
+        Boolean ret = CleanTempDir(xmldir,false);
+        if(!ret) {
+            if (DEBUG) Log.d("MAIN", "Couldn't make dir: " + xmldir.getPath());
+        } else {
+            // Write all files to internal store
+            Integer cnt = 0;
+            for (DivingLogDive d : DLC.DLDives) {
+                if (d.isSelected) {
+                    String xml = d.toDLD();
+                    if (VERBOSE) Log.d("MAIN", xml);
 
-        // Write all files to internal store
-        Integer cnt = 0;
-        for (DivingLogDive d: DLC.DLDives){
-            if(d.isSelected){
-                String xml = d.toDLD();
-                if(VERBOSE) Log.d("MAIN", xml);
-
-                // Get file with index and write xml content
-                File xmlf = new File(xmldir, cnt + ".xml");
-                try {
-                    FileOutputStream stream = new FileOutputStream(xmlf);
+                    // Get file with index and write xml content
+                    File xmlf = new File(xmldir, cnt + ".xml");
                     try {
-                        stream.write(xml.getBytes());
-                    } finally {
-                        stream.close();
+                        try (FileOutputStream stream = new FileOutputStream(xmlf)) {
+                            stream.write(xml.getBytes());
+                        }
+                    } catch (Exception e) {
+                        if (ERROR) Log.e("MAIN", "XML write exception: " + e);
                     }
-                }
-                catch (Exception e) {
-                    if(ERROR) Log.e("MAIN", "XML write exception: " + e.toString());
-                }
-                cnt++;
-            }
-        }
-
-        // zip all files in folder
-        String xmlfname = xmldir.toPath() + "/upload.zip";
-        try {
-            FileOutputStream f = new FileOutputStream(xmlfname);
-            ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(f));
-            byte buf[] = new byte[2048];
-
-            // Loop through xmldir and add all .xml files to zip
-            for (File child : xmldir.listFiles()){
-                if(child.getPath().endsWith(".xml")) {
-                    // Get file content
-                    FileInputStream fi = null;
-                    fi = new FileInputStream(child.getPath());
-                    // Remove path from filename
-                    String fname = child.getPath().substring(child.getPath().lastIndexOf("/")+1);
-                    // Add new entry to zip
-                    zip.putNextEntry(new ZipEntry(fname));
-                    // Write data from FileInputStream to zip
-                    int len;
-                    while ((len = fi.read(buf)) > 0) {
-                        zip.write(buf, 0, len);
-                    }
-                    // Close FileInputStream and current zip entry
-                    fi.close();
-                    zip.closeEntry();
+                    cnt++;
                 }
             }
-            // Write everything and close everything up
-            zip.flush();
-            zip.close();
-        } catch(Exception e) {
-            if(ERROR) Log.e("MAIN", "XML write exception: " + e.toString());
-        }
 
-        // Upload zip file
-        ArrayList<String> up = LoadDLLoginData();
-        if (up != null) {
-            if(up.size() == 2) {
+            // zip all files in folder
+            String xmlfname = xmldir.toPath() + "/upload.zip";
+            try {
+                FileOutputStream f = new FileOutputStream(xmlfname);
+                ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(f));
+                byte[] buf = new byte[2048];
+
+                // Loop through xmldir and add all .xml files to zip
+                for (File child : Objects.requireNonNull(xmldir.listFiles())) {
+                    if (child.getPath().endsWith(".xml")) {
+                        // Get file content
+                        FileInputStream fi;
+                        fi = new FileInputStream(child.getPath());
+                        // Remove path from filename
+                        String fname = child.getPath().substring(child.getPath().lastIndexOf("/") + 1);
+                        // Add new entry to zip
+                        zip.putNextEntry(new ZipEntry(fname));
+                        // Write data from FileInputStream to zip
+                        int len;
+                        while ((len = fi.read(buf)) > 0) {
+                            zip.write(buf, 0, len);
+                        }
+                        // Close FileInputStream and current zip entry
+                        fi.close();
+                        zip.closeEntry();
+                    }
+                }
+                // Write everything and close everything up
+                zip.flush();
+                zip.close();
+            } catch (Exception e) {
+                if (ERROR) Log.e("MAIN", "XML write exception: " + e);
+            }
+
+            // Upload zip file
+            ArrayList<String> up = LoadDLLoginData();
+            if (up.size() >= 2) {
                 File xmlf = new File(xmldir, "upload.zip");
                 String res = DLApi.UploadDives(up.get(0), up.get(1), xmlf);
                 Toast.makeText(this, res, Toast.LENGTH_LONG).show();
+                setContentView(R.layout.activity_main);
             } else {
                 Toast.makeText(this, "Missing credentials?!", Toast.LENGTH_LONG).show();
             }
-        } else {
-            Toast.makeText(this, "Missing credentials?!", Toast.LENGTH_LONG).show();
         }
+
+        // Clean folders up
+        ret = CleanTempDir(xmldir, true);
+        if(!ret)
+            if (DEBUG) Log.d("MAIN", "Couldn't clean up: " + xmldir.getPath());
 
     }
 
+    private Boolean CleanTempDir(File xmldir, Boolean fin) {
 
-    /**
-     * ActivityResultLauncher for DivesSelection-Dialog
-     */
-    ActivityResultLauncher<Intent> DivesSelectionLauncher = registerForActivityResult(
-        new ActivityResultContracts.StartActivityForResult(),
-        new ActivityResultCallback<ActivityResult>() {
-            @Override
-            public void onActivityResult(ActivityResult result) {
-                if (result.getResultCode() == 2) {
-                    // There are no request codes
-                    Intent data = result.getData();
-                    String message = data.getStringExtra("MESSAGE");
-                    Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG).show();
-                }
+        boolean res = true;
+        if(xmldir.exists()){
+            for (File child : Objects.requireNonNull(xmldir.listFiles())) {
+                res = child.delete();
+                if(!res)
+                    if (DEBUG) Log.d("MAIN", "Couldn't delete: " + child.getPath());
             }
-        });
+            res = xmldir.delete();
+            if(!res)
+                if (DEBUG) Log.d("MAIN", "Couldn't delete: " + xmldir.getPath());
+        }
+        if(!fin) {
+            return xmldir.mkdir();
+        } else {
+            return res;
+        }
+
+    }
 
 }
