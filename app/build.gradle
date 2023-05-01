@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+allprojects {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+}
+
 android {
     namespace 'com.bee_eater.dltodlde'
     compileSdk 33

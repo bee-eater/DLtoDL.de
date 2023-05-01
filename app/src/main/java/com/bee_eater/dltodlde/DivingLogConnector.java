@@ -1,9 +1,13 @@
 package com.bee_eater.dltodlde;
 
+import static com.bee_eater.dltodlde.Constants.ERROR;
+import static com.bee_eater.dltodlde.Constants.VERBOSE;
+
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -12,7 +16,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -21,8 +24,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.bee_eater.dltodlde.Constants.*;
 
 public class DivingLogConnector {
 
@@ -65,7 +66,7 @@ public class DivingLogConnector {
     }
 
     private class LoadDiveLogFile extends Thread {
-        Handler handler = new Handler();
+        Handler handler = new Handler(Looper.getMainLooper());
 
         @Override
         public void run() {
@@ -142,14 +143,66 @@ public class DivingLogConnector {
 
         // Init empty dive list
         List<DivingLogDive> DLDives = new ArrayList<>();
+        List<DivingLogTank> Tanks = new ArrayList<>();
+        int results;
+        int currCnt = 0;
+
+        // Get all tanks first (used later)
+        SQLiteDatabase db = SQLiteDatabase.openDatabase(file, null, 0);
+        String tankQuery = "SELECT * FROM Tank";
+        Cursor tres = db.rawQuery(tankQuery,null);
+
+        results = tres.getCount();
+
+        // Parse results
+        tres.moveToFirst();
+        if (tres.moveToFirst()) {
+            while (!tres.isAfterLast()) {
+
+                // Create temp dive
+                DivingLogTank tank = new DivingLogTank();
+
+                // Loop over all columns, get value and add to dive
+                for (int i = 0; i < tres.getColumnCount(); i++) {
+                    // Get column name
+                    String colName = tres.getColumnName(i);
+                    // Get column type in order to use correct function
+                    int colType = tres.getType(i);
+                    // Get column value based on type
+                    Object colValue;
+                    switch(colType){
+                        case Cursor.FIELD_TYPE_NULL: colValue = null; break;// NULL value, ignore
+                        case Cursor.FIELD_TYPE_INTEGER: colValue = tres.getInt(i); break;
+                        case Cursor.FIELD_TYPE_FLOAT: colValue = tres.getDouble(i); break;
+                        case Cursor.FIELD_TYPE_STRING: colValue = tres.getString(i); break;
+                        default:
+                            if (VERBOSE) Log.v("DLCONN", "Found column type :: " + Integer.toString(colType));
+                            colValue = "ERR";
+                    }
+
+                    // Add value to dive by member name
+                    try {
+                        tank.setMemberByName(colName, colValue);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
+                    }
+                    if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
+                }
+                Tanks.add(tank);
+                tres.moveToNext();
+                currCnt++;
+                int progress = (currCnt * 100/ results);
+                setGuiProcess(progress, currCnt, results);
+            }
+        }
+        tres.close();
 
         // Load database from file and query all dives from logbook
-        SQLiteDatabase db = SQLiteDatabase.openDatabase(file, null, 0);
         String query = "SELECT * FROM Logbook";
         Cursor res = db.rawQuery(query,null);
 
-        int results = res.getCount();
-        int currCnt = 0;
+        results = res.getCount();
+        currCnt = 0;
 
         // Parse results
         res.moveToFirst();
@@ -185,6 +238,12 @@ public class DivingLogConnector {
                     }
                     if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
                 }
+
+                // Add tanks to dive
+                Tanks.stream().filter(o -> o.LogID.equals(dive.ID)).forEach(
+                        o -> dive.Tanks.add(o)
+                );
+
                 // Convert date and entry time to LocalDateTime variable (for later comparison to DiveLogs.de list)
                 try {
                     String tmpDT = dive.Divedate + " " + dive.Entrytime;

@@ -26,7 +26,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-public class DivingLogDive {
+
+public class DivingLogDive extends DivingLogTank {
 
     private static final String[] StrWaterVisibility = {"", "Gut", "Mittel", "Schlecht"};
     private static final List<String> WaterVisibility = Arrays.asList(StrWaterVisibility);
@@ -45,7 +46,6 @@ public class DivingLogDive {
     public String ListInfoText = "";
 
     // DivingLog parameters read from sql
-    public Integer ID;
     public Integer Number;
     public String Divedate;
     public LocalDateTime DiveDateDT;
@@ -66,10 +66,6 @@ public class DivingLogDive {
     public Integer Water;
     public Integer Entry;
     public String Divetype;
-    public Integer Tanktype;
-    public Double Tanksize;
-    public Double PresS;
-    public Double PresE;
     public String Gas;
     public String Weather;
     public String UWCurrent;
@@ -87,7 +83,6 @@ public class DivingLogDive {
     public Integer ProfileInt;
     public String Profile;
     public String UsedEquip;
-    public Double PresW;
     public String Profile2;
     public String Profile3;
     public Double DepthAvg;
@@ -104,22 +99,30 @@ public class DivingLogDive {
     public String Divemaster;
     public String Boat;
     public Integer Rating;
-    public Double O2;
-    public Double He;
-    public Integer DblTank;
-    public Integer SupplyType;
-    public Double MinPPO2;
-    public Double MaxPPO2;
     public Integer ShopID;
     public Integer TripID;
-    public Integer utcOffset;
+    public Integer UtcOffset;
     public Double DesaturationTime;
     public Double NoFlyTime;
-    public Double ScrubberTime;
+    public ArrayList<DivingLogTank> Tanks = new ArrayList<>();
 
     public void setMemberByName(String name, Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = getClass().getDeclaredField(name);
-        field.set(this,value);
+        Field field = findUnderlying(getClass(), name);
+        if (field != null) {
+            field.set(this, value);
+        } else {
+            Log.e("DIVE", "Field not found: " + name);
+        }
+    }
+
+    public static Field findUnderlying(Class<?> clazz, String fieldName) {
+        Class<?> current = clazz;
+        do {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch(Exception e) {}
+        } while((current = current.getSuperclass()) != null);
+        return null;
     }
 
     @NonNull
@@ -191,12 +194,13 @@ public class DivingLogDive {
                 " \"MaxPPO2\": " + String.valueOf(this.MaxPPO2) + "," +
                 " \"ShopID\": " + String.valueOf(this.ShopID) + "," +
                 " \"TripID\": " + String.valueOf(this.TripID) + "," +
-                " \"utcOffset\": " + String.valueOf(this.utcOffset) + "," +
+                " \"utcOffset\": " + String.valueOf(this.UtcOffset) + "," +
                 " \"DesaturationTime\": " + String.valueOf(this.DesaturationTime) + "," +
                 " \"NoFlyTime\": " + String.valueOf(this.NoFlyTime) + "," +
                 " \"ScrubberTime\": " + String.valueOf(this.ScrubberTime) +
                 "}";
     }
+
 
     public String toDLD(){
 
@@ -330,87 +334,24 @@ public class DivingLogDive {
             }
             rootElement.appendChild(el);
 
-            // Cylinder name (CDATA!)
-            // --> NA --> Leave empty
-            el = doc.createElement("CYLINDERNAME");
-            cdata = doc.createCDATASection("");
-            el.appendChild(cdata);
-            rootElement.appendChild(el);
-
-            // Cylinder description (CDATA!)
-            el = doc.createElement("CYLINDERDESCRIPTION");
-            if (this.Tanktype != null) {
-                if(this.Tanktype < TankType.size()) {
-                    cdata = doc.createCDATASection(TankType.get(this.Tanktype));
-                    el.appendChild(cdata);
-                }
-            }
-            rootElement.appendChild(el);
-
-            // Double tank?
-            el = doc.createElement("DBLTANK");
-            if (this.DblTank != null)
-                el.setTextContent(String.valueOf(this.DblTank));
-            rootElement.appendChild(el);
-
-            // Cylinder size [l]
-            el = doc.createElement("CYLINDERSIZE");
-            if (this.Tanksize != null)
-                el.setTextContent(String.format("%.2f", this.Tanksize));
-            rootElement.appendChild(el);
-
-            // Cylinder start pressure [bar]
-            el = doc.createElement("CYLINDERSTARTPRESSURE");
-            if (this.PresS != null)
-                el.setTextContent(String.format("%.2f", this.PresS));
-            rootElement.appendChild(el);
-
-            // Cylinder end pressure [bar]
-            el = doc.createElement("CYLINDERENDPRESSURE");
-            if (this.PresE != null)
-                el.setTextContent(String.format("%.2f", this.PresE));
-            rootElement.appendChild(el);
-
-            // Working pressure [bar]
-            el = doc.createElement("WORKINGPRESSURE");
-            if (this.PresW != null)
-                el.setTextContent(String.format("%.2f", this.PresW));
-            rootElement.appendChild(el);
-
             // Weight [kg]
             el = doc.createElement("WEIGHT");
             if (this.Weight != null)
                 el.setTextContent(String.format("%.2f", this.Weight));
             rootElement.appendChild(el);
 
-            // O2 percentage
-            el = doc.createElement("O2PCT");
-            if (this.O2 != null)
-                el.setTextContent(String.format("%.2f", this.O2));
-            rootElement.appendChild(el);
-
-            // H2 percentage
-            el = doc.createElement("HEPCT");
-            if (this.He != null)
-                el.setTextContent(String.format("%.2f", this.He));
-            rootElement.appendChild(el);
+            addTank(doc,rootElement,this);
 
             // Additional tanks
-            // NA in SQLite export???
-            /* <ADDITIONALTANKS>
-                <TANK>
-                  <CYLINDERNAME><![CDATA[name]]></CYLINDERNAME>
-                  <CYLINDERDESCRIPTION><![CDATA[Aluminium]]></CYLINDERDESCRIPTION>
-                  <DBLTANK>0</DBLTANK>
-                  <CYLINDERSIZE>11.00</CYLINDERSIZE>
-                  <CYLINDERSTARTPRESSURE>150.00</CYLINDERSTARTPRESSURE>
-                  <CYLINDERENDPRESSURE>120.00</CYLINDERENDPRESSURE>
-                  <WORKINGPRESSURE>232.00</WORKINGPRESSURE>
-                  <O2PCT>51.0</O2PCT>
-                  <HEPCT/>
-                </TANK>
-              </ADDITIONALTANKS>
-             */
+            if(this.Tanks.size() > 0) {
+                Element addTanks = doc.createElement("ADDITIONALTANKS");
+                for(DivingLogTank t: this.Tanks){
+                    Element tank = doc.createElement("TANK");
+                    addTank(doc,tank,t);
+                    addTanks.appendChild(tank);
+                }
+                rootElement.appendChild(addTanks);
+            }
 
             // Notes (CDATA!)
             el = doc.createElement("LOGNOTES");
@@ -434,7 +375,6 @@ public class DivingLogDive {
             if (this.ProfileInt != null)
                 el.setTextContent(String.valueOf(this.ProfileInt));
             rootElement.appendChild(el);
-
 
             // <SAMPLE><DEPTH>value</DEPTH></SAMPLE>
             if (this.ProfileInt != null) {
@@ -474,6 +414,71 @@ public class DivingLogDive {
             if (ERROR) Log.e("DivingLogDive.toDLD(): ", e.toString());
             return "";
         }
+    }
+
+    public void addTank(Document doc, Element parent, DivingLogTank t){
+
+        Element el;
+        CDATASection cdata;
+
+        // Cylinder name (CDATA!)
+        // --> NA --> Leave empty
+        el = doc.createElement("CYLINDERNAME");
+        cdata = doc.createCDATASection("");
+        el.appendChild(cdata);
+        parent.appendChild(el);
+
+        // Cylinder description (CDATA!)
+        el = doc.createElement("CYLINDERDESCRIPTION");
+        if (t.Tanktype  != null) {
+            if(t.Tanktype < TankType.size()) {
+                cdata = doc.createCDATASection(TankType.get(t.Tanktype));
+                el.appendChild(cdata);
+            }
+        }
+        parent.appendChild(el);
+
+        // Double tank?
+        el = doc.createElement("DBLTANK");
+        if (t.DblTank != null)
+            el.setTextContent(String.valueOf(t.DblTank));
+        parent.appendChild(el);
+
+        // Cylinder size [l]
+        el = doc.createElement("CYLINDERSIZE");
+        if (t.Tanksize != null)
+            el.setTextContent(String.format("%.2f", t.Tanksize));
+        parent.appendChild(el);
+
+        // Cylinder start pressure [bar]
+        el = doc.createElement("CYLINDERSTARTPRESSURE");
+        if (t.PresS != null)
+            el.setTextContent(String.format("%.2f", t.PresS));
+        parent.appendChild(el);
+
+        // Cylinder end pressure [bar]
+        el = doc.createElement("CYLINDERENDPRESSURE");
+        if (t.PresE != null)
+            el.setTextContent(String.format("%.2f", t.PresE));
+        parent.appendChild(el);
+
+        // Working pressure [bar]
+        el = doc.createElement("WORKINGPRESSURE");
+        if (t.PresW != null)
+            el.setTextContent(String.format("%.2f", t.PresW));
+        parent.appendChild(el);
+
+        // O2 percentage
+        el = doc.createElement("O2PCT");
+        if (t.O2 != null)
+            el.setTextContent(String.format("%.2f", t.O2));
+        parent.appendChild(el);
+
+        // H2 percentage
+        el = doc.createElement("HEPCT");
+        if (t.He != null)
+            el.setTextContent(String.format("%.2f", t.He));
+        parent.appendChild(el);
     }
 
 }
