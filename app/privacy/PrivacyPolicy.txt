@@ -1,0 +1,15 @@
+The following Data can be entered inside the App:
+DiveLogs.de Username
+DiveLogs.de Password
+
+This information is just saved locally inside the App and used to authenticate 
+against the DiveLogs.de API (https://divelogs.de/dl_api.html). 
+If you want to delete your information, just open the app, 
+remove the username / password and hit "Save / Test".
+
+If you open up you SQL Database you can select dives to upload to DivingLog.de. 
+Uppon clicking the upload button, all selected dives will be uploaded to DivingLog.de. 
+Therefor a https connection is created and required. 
+See https://www.divelogs.de/datenschutzerklaerung.php for the privacy policy of DiveLogs.de
+
+This App does not collect or share any personal data!
