@@ -1,6 +1,6 @@
 package com.bee_eater.dltodlde;
 
-import static com.bee_eater.dltodlde.Constants.ERROR;
+import static com.bee_eater.dltodlde.Constants.*;
 
 import android.util.Log;
 
@@ -11,12 +11,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.io.StringWriter;
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -37,7 +38,6 @@ public class DivingLogDive extends DivingLogTank {
 
     private static final String[] StrWaterType = {"", "Salzwasser", "Süßwasser", "Mischwasser", "Chloriert"};
     private static final List<String> WaterType = Arrays.asList(StrWaterType);
-
 
     // Other stuff used in app
     public Boolean isSelected = Boolean.FALSE;
@@ -106,24 +106,7 @@ public class DivingLogDive extends DivingLogTank {
     public Double NoFlyTime;
     public ArrayList<DivingLogTank> Tanks = new ArrayList<>();
 
-    public void setMemberByName(String name, Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = findUnderlying(getClass(), name);
-        if (field != null) {
-            field.set(this, value);
-        } else {
-            Log.e("DIVE", "Field not found: " + name);
-        }
-    }
-
-    public static Field findUnderlying(Class<?> clazz, String fieldName) {
-        Class<?> current = clazz;
-        do {
-            try {
-                return current.getDeclaredField(fieldName);
-            } catch(Exception e) {}
-        } while((current = current.getSuperclass()) != null);
-        return null;
-    }
+    public DivingLogPlace PlaceInfo;
 
     @NonNull
     @Override
@@ -362,10 +345,19 @@ public class DivingLogDive extends DivingLogTank {
             rootElement.appendChild(el);
 
             // Latitude
-            // --> NA
-
             // Longitude
-            // --> NA
+            try {
+                GeoConverter geo = new GeoConverter();
+                double[] latLon = geo.convert(this.PlaceInfo.Lat + " " + this.PlaceInfo.Lon);
+                el = doc.createElement("LAT");
+                el.setTextContent(String.valueOf((double)(latLon[0])));
+                rootElement.appendChild(el);
+                el = doc.createElement("LNG");
+                el.setTextContent(String.valueOf((double)(latLon[1])));
+                rootElement.appendChild(el);
+            } catch (Exception e){
+                if (DEBUG) Log.d("DivingLogDive.toDLD(): ", "Error converting to latLon:" + e);
+            }
 
             // Google zoom level
             // --> NA
@@ -415,6 +407,7 @@ public class DivingLogDive extends DivingLogTank {
             return "";
         }
     }
+
 
     public void addTank(Document doc, Element parent, DivingLogTank t){
 

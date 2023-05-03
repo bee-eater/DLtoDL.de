@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.InvalidObjectException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -144,11 +145,14 @@ public class DivingLogConnector {
         // Init empty dive list
         List<DivingLogDive> DLDives = new ArrayList<>();
         List<DivingLogTank> Tanks = new ArrayList<>();
+        List<DivingLogPlace> Places = new ArrayList<>();
         int results;
         int currCnt = 0;
 
-        // Get all tanks first (used later)
+        // Open SQLite DB from file
         SQLiteDatabase db = SQLiteDatabase.openDatabase(file, null, 0);
+
+        // Get all tanks first (used later)
         String tankQuery = "SELECT * FROM Tank";
         Cursor tres = db.rawQuery(tankQuery,null);
 
@@ -183,7 +187,7 @@ public class DivingLogConnector {
                     // Add value to dive by member name
                     try {
                         tank.setMemberByName(colName, colValue);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                    } catch (NoSuchFieldException | IllegalAccessException | InvalidObjectException e) {
                         if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
                     }
                     if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
@@ -197,7 +201,58 @@ public class DivingLogConnector {
         }
         tres.close();
 
-        // Load database from file and query all dives from logbook
+        // Get all places
+        String placeQuery = "SELECT * FROM Place";
+        Cursor pres = db.rawQuery(placeQuery,null);
+
+        results = pres.getCount();
+
+        // Parse results
+        pres.moveToFirst();
+        if (pres.moveToFirst()) {
+            while (!pres.isAfterLast()) {
+
+                // Create temp dive
+                DivingLogPlace place = new DivingLogPlace();
+
+                // Loop over all columns, get value and add to dive
+                for (int i = 0; i < pres.getColumnCount(); i++) {
+                    // Get column name
+                    String colName = pres.getColumnName(i);
+                    // Get column type in order to use correct function
+                    int colType = pres.getType(i);
+                    // Get column value based on type
+                    Object colValue;
+                    switch(colType){
+                        case Cursor.FIELD_TYPE_NULL: colValue = null; break;// NULL value, ignore
+                        case Cursor.FIELD_TYPE_INTEGER: colValue = pres.getInt(i); break;
+                        case Cursor.FIELD_TYPE_FLOAT: colValue = pres.getDouble(i); break;
+                        case Cursor.FIELD_TYPE_STRING: colValue = pres.getString(i); break;
+                        case Cursor.FIELD_TYPE_BLOB: colValue = pres.getBlob(i); break;
+                        default:
+                            if (VERBOSE) Log.v("DLCONN", "Found column type :: " + Integer.toString(colType));
+                            colValue = "ERR";
+                    }
+
+                    // Add value to dive by member name
+                    try {
+                        place.setMemberByName(colName, colValue);
+                    } catch (NoSuchFieldException | IllegalAccessException | InvalidObjectException e) {
+                        if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
+                    }
+                    if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
+                }
+                Places.add(place);
+                pres.moveToNext();
+                currCnt++;
+                int progress = (currCnt * 100/ results);
+                setGuiProcess(progress, currCnt, results);
+            }
+        }
+        pres.close();
+
+
+        // Query all dives from logbook
         String query = "SELECT * FROM Logbook";
         Cursor res = db.rawQuery(query,null);
 
@@ -233,7 +288,7 @@ public class DivingLogConnector {
                     // Add value to dive by member name
                     try {
                         dive.setMemberByName(colName, colValue);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                    } catch (NoSuchFieldException | IllegalAccessException | InvalidObjectException e) {
                         if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
                     }
                     if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
@@ -242,6 +297,11 @@ public class DivingLogConnector {
                 // Add tanks to dive
                 Tanks.stream().filter(o -> o.LogID.equals(dive.ID)).forEach(
                         o -> dive.Tanks.add(o)
+                );
+
+                // Add place to dive
+                Places.stream().filter(o -> o.ID.equals(dive.PlaceID)).forEach(
+                        o -> dive.PlaceInfo = o
                 );
 
                 // Convert date and entry time to LocalDateTime variable (for later comparison to DiveLogs.de list)
@@ -263,10 +323,13 @@ public class DivingLogConnector {
             }
         }
         res.close();
+
+
         db.close();
 
         return DLDives;
     }
+
 
     private void setGuiProcess(int progress, int done, int total){
         main.runOnUiThread(() -> {

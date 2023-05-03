@@ -1,8 +1,9 @@
 package com.bee_eater.dltodlde;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 
-public class DivingLogTank {
+public class DivingLogTank extends MemberSetter {
     public Integer ID;
     public Integer LogID;
     public Integer TankID;
@@ -23,8 +24,5 @@ public class DivingLogTank {
     public String UUID;
     public String Updated;
 
-    public void setMemberByName(String name, Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = getClass().getDeclaredField(name);
-        field.set(this, value);
-    }
 }
+
