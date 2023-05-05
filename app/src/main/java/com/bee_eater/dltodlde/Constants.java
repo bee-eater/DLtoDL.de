@@ -8,4 +8,6 @@ public class Constants {
     public static final boolean DEBUG = LOGLEVEL > 3;
     public static final boolean VERBOSE = LOGLEVEL > 4;
 
+    public static final String INTENT_EXTRA_FILEPATH = "FPITENT";
+
 }

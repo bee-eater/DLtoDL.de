@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -16,9 +17,26 @@
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
+        android:supportsRtl="false"
         android:theme="@style/Theme.DLtoDLde"
         tools:targetApi="31">
+
+        <service
+            android:name=".FileObserverService"
+            android:stopWithTask="false"
+            android:enabled="true"
+            android:exported="false">
+        </service>
+
+        <receiver
+            android:name="FileObserverServiceRestarter"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="RestartService" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -28,35 +46,8 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:scheme="file" />
-                <data android:scheme="content" />
-                <data android:mimeType="*/*" />
-                <data android:host="*" />
-                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.sql" />
-                <data android:pathPattern=".*\\..*\\..*\\..*\\.sql" />
-                <data android:pathPattern=".*\\..*\\..*\\.sql" />
-                <data android:pathPattern=".*\\..*\\.sql" />
-                <data android:pathPattern=".*\\.sql" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:scheme="file" />
-                <data android:mimeType="*/*" />
-                <data android:host="*" />
-                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.sql" />
-                <data android:pathPattern=".*\\..*\\..*\\..*\\.sql" />
-                <data android:pathPattern=".*\\..*\\..*\\.sql" />
-                <data android:pathPattern=".*\\..*\\.sql" />
-                <data android:pathPattern=".*\\.sql" />
-            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 

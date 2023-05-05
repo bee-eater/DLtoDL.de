@@ -1,14 +1,14 @@
 package com.bee_eater.dltodlde;
 
-import static com.bee_eater.dltodlde.Constants.DEBUG;
-import static com.bee_eater.dltodlde.Constants.ERROR;
-import static com.bee_eater.dltodlde.Constants.VERBOSE;
+import static com.bee_eater.dltodlde.Constants.*;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     private ListView divesList;
     private ArrayAdapter<DivingLogDive> divesListAdapter;
+    private Uri openedFile;
 
 
     /**
@@ -74,7 +75,21 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         // When App is opened, check if it opened a file by checking intent type (contains the mime file type)
         Intent intent = getIntent();
-        checkIntentForSQLFile(intent);
+        if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
+            File file = (File)intent.getBundleExtra(INTENT_EXTRA_FILEPATH).getSerializable(INTENT_EXTRA_FILEPATH);
+            openedFile = Uri.parse(file.toString());
+            if(DLC != null) {
+                MediaScannerConnection.scanFile(this,
+                        new String[] { file.toPath().toString() }, null,
+                        new MediaScannerConnection.OnScanCompletedListener() {
+                            public void onScanCompleted(String path, Uri uri) {
+                                DLC.LoadDiveLogFile(uri);
+                            }
+                        });
+            }
+        } else {
+            checkIntentForSQLFile(intent);
+        }
 
     }
 
@@ -88,7 +103,23 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     protected void onNewIntent (Intent intent){
         super.onNewIntent(intent);
         initStuff();
-        checkIntentForSQLFile(intent);
+
+        // Was opened by notification
+        if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
+            File file = (File)intent.getBundleExtra(INTENT_EXTRA_FILEPATH).getSerializable(INTENT_EXTRA_FILEPATH);
+            openedFile = Uri.parse(file.toString());
+            if(DLC != null) {
+                MediaScannerConnection.scanFile(this,
+                        new String[] { file.toPath().toString() }, null,
+                        new MediaScannerConnection.OnScanCompletedListener() {
+                            public void onScanCompleted(String path, Uri uri) {
+                                DLC.LoadDiveLogFile(uri);
+                            }
+                        });
+            }
+        } else {
+            checkIntentForSQLFile(intent);
+        }
     }
 
 
@@ -108,6 +139,34 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         } else if (viewGroup.getId() == R.id.view_diveSelection) {
             setupGUI_DiveSelect();
         }
+
+    }
+
+    @Override
+    public void onDestroy(){
+
+        try {
+            this.stopService(new Intent(this, FileObserverService.class));
+        } catch (Exception e){
+            if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
+        }
+
+        try {
+            if(openedFile != null) {
+                Intent broadcastIntent = new Intent();
+                File file = new File(openedFile.getPath());//create path from uri
+                Bundle fbundle = new Bundle();
+                fbundle.putSerializable(INTENT_EXTRA_FILEPATH, file);
+                broadcastIntent.putExtra(INTENT_EXTRA_FILEPATH, fbundle);
+                broadcastIntent.setAction("RestartService");
+                broadcastIntent.setClass(this, FileObserverServiceRestarter.class);
+                this.sendBroadcast(broadcastIntent);
+            }
+        } catch (Exception e){
+            if (DEBUG) Log.d("MAIN", "onDestroy(): " + e);
+        }
+
+        super.onDestroy();
 
     }
 
@@ -236,6 +295,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             Uri file = intent.getData();
             try {
                 DLC.LoadDiveLogFile(file);
+                openedFile = file;
             } catch (Exception e) {
                 if (ERROR) Log.e("MAIN", e.toString());
                 Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
@@ -267,15 +327,56 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                 diveLogsLoadDives();
                 // Compare DiveLogs list to DivingLog list
                 compareDiveLists();
+                // Monitor this file with service
+                setupFileMonitor();
                 // Load list content, contentChanged event sets all required adapters etc...
                 setContentView(R.layout.view_diveselection);
                 // Jump to end of list
                 divesList.setSelection(divesListAdapter.getCount() - 1);
-                // TODO: Create conversion from DivingLog to DLD format
+            } else {
+                openedFile = null;
             }
+        } else {
+            openedFile = null;
         }
     }
 
+
+    /**
+     * Setup a service which monitors the just opened file for change.
+     * If the user exports, we prompt the user to upload the file directly!
+     */
+    public void setupFileMonitor () {
+
+        // Try to delete old FileObserver
+        try {
+            this.stopService(new Intent(this, FileObserverService.class));
+        } catch (Exception e){
+            if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
+        }
+
+        // Create new FileObserver service with file
+        File file = new File(openedFile.getPath());//create path from uri
+        try {
+            Intent obs_intent = new Intent(this, FileObserverService.class);
+            Bundle fbundle = new Bundle();
+            fbundle.putSerializable(INTENT_EXTRA_FILEPATH, file);
+            obs_intent.putExtra(INTENT_EXTRA_FILEPATH, fbundle);
+            this.startService(obs_intent);
+        } catch (Exception e){
+            if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
+        }
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Compare DivesLogs.de list to DivingLog list and create diff info
