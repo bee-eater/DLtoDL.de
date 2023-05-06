@@ -3,6 +3,7 @@ package com.bee_eater.dltodlde;
 import static com.bee_eater.dltodlde.Constants.ERROR;
 import static com.bee_eater.dltodlde.Constants.VERBOSE;
 
+import android.content.UriPermission;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
