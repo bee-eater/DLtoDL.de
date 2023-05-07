@@ -4,4 +4,5 @@
     <string name="divelogs_de_username">Divelogs.de username</string>
     <string name="divelogs_de_password">Divelogs.de password</string>
     <string name="app_main_btnLogin">Save / Test</string>
+    <string name="app_main_btnSelectLogFolder">Select log folder</string>
 </resources>

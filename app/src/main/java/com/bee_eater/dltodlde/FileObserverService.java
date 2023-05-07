@@ -27,29 +27,23 @@ public class FileObserverService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         try {
-            //String sdcardPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-            if ((intent.hasExtra(INTENT_EXTRA_FILEPATH))) {// we store the path of directory inside the intent that starts the service
-
-                Uri file = DLtoDLdeHelper.getUriFromIntent(intent);
-                // Creating the FileObserver with the string /storage/emulated/0/Diving/Logbook.sql works
-                // Creating it with the file from the opening intent --> not working. Missing permissions??
-                mFileObserver = new FileObserver(DIVINGLOG_FILEPATH) {
-                    @Override
-                    public void onEvent(int event, String path) {
-                        if (event == 0x8) { // CLOSE_WRITE --> New file written and closed
-                            if (!muteEvents) { // Event 8 always appears twice --> ignore second!
-                                // If an event happens we can do stuff inside here
-                                // for example we can send a broadcast message with the event-id
-                                Log.d("FILEOBSERVER_EVENT", "Event with id " + Integer.toHexString(event) + " happened"); // event identifies the occured Event in hex
-                                muteEvents = true;
-                                ShowNotification(file.toString());
-                            } else {
-                                muteEvents = false;
-                            }
+            String folder = intent.getStringExtra(INTENT_EXTRA_FILEPATH);
+            mFileObserver = new FileObserver(new File(DIVINGLOG_FILEPATH)) {
+                @Override
+                public void onEvent(int event, String path) {
+                    if (event == 0x8) { // CLOSE_WRITE --> New file written and closed
+                        if (!muteEvents) { // Event 8 always appears twice --> ignore second!
+                            // If an event happens we can do stuff inside here
+                            // for example we can send a broadcast message with the event-id
+                            Log.d("FILEOBSERVER_EVENT", "Event with id " + Integer.toHexString(event) + " happened"); // event identifies the occured Event in hex
+                            muteEvents = true;
+                            ShowNotification();
+                        } else {
+                            muteEvents = false;
                         }
                     }
+                }
                 };
-            }
             mFileObserver.startWatching(); // The FileObserver starts watching
             return Service.START_STICKY;
         } catch (Exception e) {
@@ -60,10 +54,10 @@ public class FileObserverService extends Service {
 
     public static final String NOTIFICATION_CHANNEL_ID = "10001" ;
     private static final String NOTIFICATION_CHANNEL_STR = "default";
-    private void ShowNotification(String file){
+    private void ShowNotification(){
 
         Intent intent = new Intent(this, MainActivity.class)
-                .putExtra(INTENT_EXTRA_FILEPATH, file);
+                .putExtra(INTENT_EXTRA_FILEPATH, "");
 
         PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
