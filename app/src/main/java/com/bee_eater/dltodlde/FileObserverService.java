@@ -28,9 +28,8 @@ public class FileObserverService extends Service {
         try {
             //String sdcardPath = Environment.getExternalStorageDirectory().getAbsolutePath();
             if ((intent.hasExtra(INTENT_EXTRA_FILEPATH))) {// we store the path of directory inside the intent that starts the service
-                //File file = (File) intent.getBundleExtra(INTENT_EXTRA_FILEPATH).getSerializable(INTENT_EXTRA_FILEPATH);
-                String file = intent.getStringExtra(INTENT_EXTRA_FILEPATH);
-                Uri myUri = Uri.parse(file);
+
+                Uri file = DLtoDLdeHelper.getUriFromIntent(intent);
                 // Creating the FileObserver with the string /storage/emulated/0/Diving/Logbook.sql works
                 // Creating it with the file from the opening intent --> not working. Missing permissions??
                 mFileObserver = new FileObserver("/storage/emulated/0/Diving/") {
@@ -42,7 +41,7 @@ public class FileObserverService extends Service {
                                 // for example we can send a broadcast message with the event-id
                                 Log.d("FILEOBSERVER_EVENT", "Event with id " + Integer.toHexString(event) + " happened"); // event identifies the occured Event in hex
                                 muteEvents = true;
-                                ShowNotification(file);
+                                ShowNotification(file.toString());
                             } else {
                                 muteEvents = false;
                             }

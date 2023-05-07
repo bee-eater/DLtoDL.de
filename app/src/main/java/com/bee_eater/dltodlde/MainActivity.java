@@ -7,6 +7,7 @@ import static com.bee_eater.dltodlde.Constants.ERROR;
 import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
 import static com.bee_eater.dltodlde.Constants.VERBOSE;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
+import android.os.storage.StorageManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -29,6 +31,10 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -84,11 +90,10 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         // When App is opened, check if it opened a file by checking intent type (contains the mime file type)
         Intent intent = getIntent();
         if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
-            String file = (String)intent.getBundleExtra(INTENT_EXTRA_FILEPATH).getSerializable(INTENT_EXTRA_FILEPATH);
-            openedFile = Uri.parse(file);
-            if(DLC != null) {
-                DLC.LoadDiveLogFile(openedFile);
-            }
+            openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
+            // Since we don't have permission to directly read the file,
+            // open a file chooser with file as preset
+            openFileSelectDialog();
         } else {
             checkIntentForSQLFile(intent);
         }
@@ -108,16 +113,48 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         // Was opened by notification
         if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
-            //File file = (File)intent.getBundleExtra(INTENT_EXTRA_FILEPATH).getSerializable(INTENT_EXTRA_FILEPATH);
-            String file = intent.getStringExtra(INTENT_EXTRA_FILEPATH);
-            openedFile = Uri.parse(file);
-            if(DLC != null) {
-                DLC.LoadDiveLogFile(openedFile);
-            }
+            openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
+            // Since we don't have permission to directly read the file,
+            // open a file chooser with file as preset
+            openFileSelectDialog();
         } else {
             checkIntentForSQLFile(intent);
         }
     }
+
+    public void openFileSelectDialog() {
+
+        Intent intent = new Intent()
+                .setType("application/*")
+                .setAction(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setDataAndType(Uri.parse(Environment.getExternalStorageDirectory().getPath()), "file/*")
+                .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                .putExtra("android.provider.extra.INITIAL_URI", Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADiving"));
+
+        String[] mimeTypes = new String[]{"application/x-sql"};
+        if (mimeTypes.length > 0) {
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        }
+        someActivityResultLauncher.launch(Intent.createChooser(intent, "Select a file"));
+    }
+
+    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
+    ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // There are no request codes
+                        Intent data = result.getData();
+                        openedFile = data.getData();
+                        if(DLC != null) {
+                            DLC.LoadDiveLogFile(openedFile);
+                        }
+                    }
+                }
+            });
 
 
     /**
@@ -360,6 +397,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         } catch (Exception e){
             if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
         }
+
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -589,5 +627,8 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         }
 
     }
+
+
+
 
 }

@@ -20,9 +20,8 @@ public class FileObserverServiceRestarter extends BroadcastReceiver {
         Toast.makeText(context, "Service restarted", Toast.LENGTH_SHORT).show();
 
         try {
-            String file = intent.getStringExtra(INTENT_EXTRA_FILEPATH);
             Intent restartIntent = new Intent();
-            restartIntent.putExtra(INTENT_EXTRA_FILEPATH, file);
+            restartIntent.putExtra(INTENT_EXTRA_FILEPATH, intent.getStringExtra(INTENT_EXTRA_FILEPATH));
             restartIntent.setClass(context, FileObserverService.class);
             context.startService(restartIntent);
         } catch (Exception e){

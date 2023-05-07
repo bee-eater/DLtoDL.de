@@ -1,5 +1,8 @@
 package com.bee_eater.dltodlde;
 
+import android.content.Intent;
+import android.net.Uri;
+
 public class Constants {
     public static final int LOGLEVEL = 4;
     public static final boolean ERROR = LOGLEVEL > 0;
