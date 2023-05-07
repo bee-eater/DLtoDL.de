@@ -46,6 +46,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -91,10 +92,14 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             //openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
             // Since we don't have permission to directly read the file,
             // open a file chooser with file as preset
-            openFileSelectDialog();
+            DLC.LoadDiveLogFile(Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql")));
+            //openFileSelectDialog();
         } else {
             checkIntentForSQLFile(intent);
         }
+
+        // Setup stuff
+        setupFolderMonitoring();
 
     }
 
@@ -114,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             //openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
             // Since we don't have permission to directly read the file,
             // open a file chooser with file as preset
-            openFileSelectDialog();
+            DLC.LoadDiveLogFile(Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql")));
+            //openFileSelectDialog();
         } else {
             checkIntentForSQLFile(intent);
         }
@@ -220,11 +226,16 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             return false;
         });
 
+    }
+
+    /**
+     * Load monitoring stuff
+     */
+    private void setupFolderMonitoring(){
         // Load log folder
         getLogFolder();
         updateTxtLogFolder();
         setupFileMonitor();
-
     }
 
     /**
@@ -418,6 +429,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             try {
                 Intent intent = new Intent(this, FileObserverService.class);
                 intent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
+                try{ this.stopService(intent); } catch (Exception e){  }
                 this.startService(intent);
             } catch (Exception e){
                 if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
@@ -666,6 +678,9 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         ret = CleanTempDir(xmldir, true);
         if(!ret)
             if (DEBUG) Log.d("MAIN", "Couldn't clean up: " + xmldir.getPath());
+
+        // Exit app!
+        finishAndRemoveTask();
 
     }
 

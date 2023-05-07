@@ -5,11 +5,7 @@ import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
-
-import java.io.File;
 
 public class FileObserverServiceRestarter extends BroadcastReceiver {
 
@@ -22,8 +18,10 @@ public class FileObserverServiceRestarter extends BroadcastReceiver {
             Intent restartIntent = new Intent();
             restartIntent.putExtra(INTENT_EXTRA_FILEPATH, "");
             restartIntent.setClass(context, FileObserverService.class);
+            try{ context.stopService(restartIntent); } catch (Exception e){ }
             context.startService(restartIntent);
-            Toast.makeText(context, "Service restarted", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "Service restarted", Toast.LENGTH_SHORT).show();
+            Log.d("Broadcast Listened", "Restarted service!");
         } catch (Exception e){
             Log.d("Broadcast Listened", e.toString());
         }

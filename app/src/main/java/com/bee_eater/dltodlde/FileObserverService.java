@@ -10,8 +10,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.Color;
-import android.net.Uri;
-import android.os.Bundle;
 import android.os.FileObserver;
 import android.os.IBinder;
 import android.util.Log;
@@ -27,7 +25,7 @@ public class FileObserverService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         try {
-            String folder = intent.getStringExtra(INTENT_EXTRA_FILEPATH);
+            //String folder = intent.getStringExtra(INTENT_EXTRA_FILEPATH);
             mFileObserver = new FileObserver(new File(DIVINGLOG_FILEPATH)) {
                 @Override
                 public void onEvent(int event, String path) {
@@ -48,6 +46,7 @@ public class FileObserverService extends Service {
             return Service.START_STICKY;
         } catch (Exception e) {
             stopSelf();
+            Log.e("FILEOBSERVER", e.toString());
             return Service.START_STICKY;
         }
     }
@@ -70,8 +69,8 @@ public class FileObserverService extends Service {
         notificationChannel.setVibrationPattern(new long []{ 100 , 200 , 300 , 400 , 500 , 400 , 300 , 200 , 400 }) ;
 
         Notification n  = new Notification.Builder(this, NOTIFICATION_CHANNEL_STR)
-                .setContentTitle("New mail from " + "test@gmail.com")
-                .setContentText("Subject")
+                .setContentTitle("Logbook was updated!")
+                .setContentText("(tap here to upload)")
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setContentIntent(pIntent)
                 .setAutoCancel(true)
