@@ -1,9 +1,12 @@
 package com.bee_eater.dltodlde;
 
 import static com.bee_eater.dltodlde.Constants.DEBUG;
+import static com.bee_eater.dltodlde.Constants.DIVINGLOG_FILEPATH;
 import static com.bee_eater.dltodlde.Constants.ERROR;
+import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
 import static com.bee_eater.dltodlde.Constants.VERBOSE;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,7 +14,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.StrictMode;
+import android.os.storage.StorageManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -20,8 +25,13 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bee_eater.dltodlde.DiveLogsApi.DiveLogsDive;
@@ -36,6 +46,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -43,13 +54,16 @@ import java.util.zip.ZipOutputStream;
 
 public class MainActivity extends AppCompatActivity implements DivingLogFileDoneListener {
 
-    private DiveLogsApi DLApi = new DiveLogsApi();
+    private final DiveLogsApi DLApi = new DiveLogsApi();
     private DivingLogConnector DLC;
 
     private ArrayList<DiveLogsDive> diveLogsDives;
 
     private ListView divesList;
     private ArrayAdapter<DivingLogDive> divesListAdapter;
+    private Uri openedFile;
+
+    private String logFolder;
 
 
     /**
@@ -74,7 +88,18 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         // When App is opened, check if it opened a file by checking intent type (contains the mime file type)
         Intent intent = getIntent();
-        checkIntentForSQLFile(intent);
+        if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
+            //openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
+            // Since we don't have permission to directly read the file,
+            // open a file chooser with file as preset
+            DLC.LoadDiveLogFile(Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql")));
+            //openFileSelectDialog();
+        } else {
+            checkIntentForSQLFile(intent);
+        }
+
+        // Setup stuff
+        setupFolderMonitoring();
 
     }
 
@@ -88,9 +113,51 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     protected void onNewIntent (Intent intent){
         super.onNewIntent(intent);
         initStuff();
-        checkIntentForSQLFile(intent);
+
+        // Was opened by notification
+        if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
+            //openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
+            // Since we don't have permission to directly read the file,
+            // open a file chooser with file as preset
+            DLC.LoadDiveLogFile(Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql")));
+            //openFileSelectDialog();
+        } else {
+            checkIntentForSQLFile(intent);
+        }
+
     }
 
+    public void openFileSelectDialog() {
+
+        Intent intent = new Intent()
+                .setType("application/*")
+                .setAction(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setDataAndType(Uri.parse(Environment.getExternalStorageDirectory().getPath()), "file/*")
+                .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                .putExtra("android.provider.extra.INITIAL_URI", Uri.parse(DIVINGLOG_FILEPATH));
+
+        String[] mimeTypes = new String[]{"application/x-sql"};
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        someActivityResultLauncher.launch(Intent.createChooser(intent, "Select a file"));
+    }
+    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
+    ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // There are no request codes
+                        Intent data = result.getData();
+                        assert data != null;
+                        openedFile = data.getData();
+                        if(DLC != null) {
+                            DLC.LoadDiveLogFile(openedFile);
+                        }
+                    }
+                }
+            });
 
     /**
      * If content changes (setContentView()) this listener will be executed
@@ -111,6 +178,23 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     }
 
+    @Override
+    public void onDestroy(){
+
+        try {
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
+            broadcastIntent.setAction("RestartService");
+            broadcastIntent.setClass(this, FileObserverServiceRestarter.class);
+            this.sendBroadcast(broadcastIntent);
+        } catch (Exception e){
+            if (DEBUG) Log.d("MAIN", "onDestroy(): " + e);
+        }
+
+        super.onDestroy();
+
+    }
+
 
     //====================================================================================================
     //====================================================================================================
@@ -122,7 +206,8 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      */
     private void setupGUI_Main(){
 
-        ArrayList<String> up = LoadDLLoginData();
+        // Load user data
+        ArrayList<String> up = getDLLoginData();
         EditText tinDLUsername = findViewById(R.id.tinDLUsername);
         EditText pwdDLPassword = findViewById(R.id.pwdDLPassword);
         if (up.size() >= 2){
@@ -141,6 +226,29 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             return false;
         });
 
+    }
+
+    /**
+     * Load monitoring stuff
+     */
+    private void setupFolderMonitoring(){
+        // Load log folder
+        getLogFolder();
+        updateTxtLogFolder();
+        setupFileMonitor();
+    }
+
+    /**
+     * Update content and visibility of log folder text output field
+     */
+    private void updateTxtLogFolder(){
+        TextView tvwLogFolder = findViewById(R.id.txtLogFolder);
+        tvwLogFolder.setText(logFolder);
+        if (logFolder == null || logFolder == ""){
+            tvwLogFolder.setVisibility(View.GONE);
+        } else {
+            tvwLogFolder.setVisibility(View.VISIBLE);
+        }
     }
 
 
@@ -170,21 +278,21 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     /**
      * Function that loads login data from shared preferences and puts it into the input fields of the app
      */
-    private ArrayList<String> LoadDLLoginData(){
+    private ArrayList<String> getDLLoginData(){
         ArrayList<String> up = new ArrayList<>();
-        SharedPreferences sp1 = this.getSharedPreferences("DLLogin", MODE_PRIVATE);
-        if(sp1 != null) {
-            String user = sp1.getString("user", null);
+        SharedPreferences sp = this.getSharedPreferences("AppSettings", MODE_PRIVATE);
+        if(sp != null) {
+            String user = sp.getString("user", null);
             if (user != null){
                 up.add(user);
             }
-            String pass = sp1.getString("pass", null);
+            String pass = sp.getString("pass", null);
             if (pass != null) {
                 up.add(pass);
             }
             // Only add image if user / pass was there...
             if (up.size() == 2) {
-                String img = sp1.getString("imgurl", null);
+                String img = sp.getString("imgurl", null);
                 if (img != null) {
                     up.add(img);
                 }
@@ -199,13 +307,41 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      * @param user Username
      * @param pass Password
      */
-    private void SaveDLLoginData(String user, String pass, String img){
-        SharedPreferences sp=getSharedPreferences("DLLogin", MODE_PRIVATE);
+    private void setDLLoginData(String user, String pass, String img){
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
         SharedPreferences.Editor Ed=sp.edit();
         Ed.putString("user", user);
         Ed.putString("pass", pass);
         Ed.putString("imgurl", img);
         Ed.apply();
+    }
+
+
+    /**
+     * Function saves selected log folder
+     * @param folder Folder from selector
+     */
+    private void setLogFolder(Uri folder){
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        SharedPreferences.Editor Ed=sp.edit();
+        logFolder = folder.toString();
+        Ed.putString("log_folder", folder.toString());
+        Ed.apply();
+    }
+
+
+    /**
+     * Function saves selected log folder
+     * @param folder Folder from selector
+     */
+    private Uri getLogFolder(){
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        logFolder = sp.getString("log_folder", null);
+        if (logFolder != null) {
+            return Uri.parse(logFolder);
+        } else {
+            return null;
+        }
     }
 
 
@@ -236,6 +372,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             Uri file = intent.getData();
             try {
                 DLC.LoadDiveLogFile(file);
+                openedFile = file;
             } catch (Exception e) {
                 if (ERROR) Log.e("MAIN", e.toString());
                 Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
@@ -271,11 +408,37 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                 setContentView(R.layout.view_diveselection);
                 // Jump to end of list
                 divesList.setSelection(divesListAdapter.getCount() - 1);
-                // TODO: Create conversion from DivingLog to DLD format
+            } else {
+                openedFile = null;
             }
+        } else {
+            openedFile = null;
         }
     }
 
+
+    /**
+     * Setup a service which monitors the just opened file for change.
+     * If the user exports, we prompt the user to upload the file directly!
+     */
+    public void setupFileMonitor () {
+
+        if(logFolder != null && logFolder != ""){
+            // Create new FileObserver service with file
+            //File file = new File(openedFile.getPath());//create path from uri
+            try {
+                Intent intent = new Intent(this, FileObserverService.class);
+                intent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
+                try{ this.stopService(intent); } catch (Exception e){  }
+                this.startService(intent);
+            } catch (Exception e){
+                if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
+            }
+        } else {
+            if (DEBUG) Log.d("MAIN", "setupFileMonitor(): Not setting up service! " + String.valueOf(logFolder));
+        }
+
+    }
 
     /**
      * Compare DivesLogs.de list to DivingLog list and create diff info
@@ -352,7 +515,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         String pass = pwdDLPassword.getText().toString();
 
         if(Objects.equals(user, "")){
-            SaveDLLoginData("","", "");
+            setDLLoginData("","", "");
             ImageView imgUser = findViewById(R.id.imgUser);
             imgUser.setImageResource(android.R.color.transparent);
             tinDLUsername.setText("");
@@ -362,7 +525,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             boolean res = DLApi.Login(user, pass);
             if(res) {
                 Toast.makeText(this,"Login successfull! Data saved!", Toast.LENGTH_LONG).show();
-                SaveDLLoginData(user, pass, DLApi.UserImageURL);
+                setDLLoginData(user, pass, DLApi.UserImageURL);
                 if (DEBUG) Log.d("MAIN", "Found user image: " + DLApi.UserImageURL);
                 try {
                     LoadUserImage(DLApi.UserImageURL);
@@ -376,6 +539,50 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         }
 
     }
+
+
+    public void on_btnSelectLogFolder_clicked(View v) {
+
+        String finalDirPath;
+        StorageManager sm = (StorageManager) getSystemService(Context.STORAGE_SERVICE);
+
+        Intent intent = sm.getPrimaryStorageVolume().createOpenDocumentTreeIntent();
+        Uri uri = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            uri = intent.getParcelableExtra("android.provider.extra.INITIAL_URI", Uri.class);
+        } else {
+            uri = intent.getParcelableExtra("android.provider.extra.INITIAL_URI");
+        }
+        String scheme = uri.toString();
+        Log.d("TAG", "INITIAL_URI scheme: " + scheme);
+        scheme = scheme.replace("/root/", "/document/");
+        finalDirPath = scheme + "%3A";
+        uri = Uri.parse(finalDirPath);
+        intent.putExtra("android.provider.extra.INITIAL_URI", uri);
+        Log.d("TAG", "uri: " + uri.toString());
+
+        getLogFolderLauncher.launch(intent);
+    }
+
+    ActivityResultLauncher<Intent> getLogFolderLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // There are no request codes
+                        Intent data = result.getData();
+                        assert data != null;
+                        Uri folder = data.getData();
+                        Log.d("TAG", "onActivityResult: " + folder.getPath());
+                        final int currFlags = data.getFlags();
+                        getContentResolver().takePersistableUriPermission(folder, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        setLogFolder(folder);
+                        updateTxtLogFolder();
+                        setupFileMonitor();
+                    }
+                }
+            });
 
 
     /**
@@ -456,7 +663,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             }
 
             // Upload zip file
-            ArrayList<String> up = LoadDLLoginData();
+            ArrayList<String> up = getDLLoginData();
             if (up.size() >= 2) {
                 File xmlf = new File(xmldir, "upload.zip");
                 String res = DLApi.UploadDives(up.get(0), up.get(1), xmlf);
@@ -471,6 +678,9 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         ret = CleanTempDir(xmldir, true);
         if(!ret)
             if (DEBUG) Log.d("MAIN", "Couldn't clean up: " + xmldir.getPath());
+
+        // Exit app!
+        finishAndRemoveTask();
 
     }
 
@@ -494,5 +704,8 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         }
 
     }
+
+
+
 
 }

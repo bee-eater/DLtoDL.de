@@ -98,6 +98,37 @@
                 app:cornerRadius="5dp" />
         </LinearLayout>
 
+        <!-- SELECT FOLDER -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/main_row_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="10dp"
+            android:paddingBottom="15dp">
+
+            <Button
+                android:id="@+id/btnSelectLogFolder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="on_btnSelectLogFolder_clicked"
+                android:text="@string/app_main_btnSelectLogFolder"
+                app:cornerRadius="5dp" />
+
+            <TextView
+                android:id="@+id/txtLogFolder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:text=""
+                android:visibility="gone"
+                />
+
+        </LinearLayout>
+
         <!-- PROGRESS BAR -->
         <LinearLayout
             android:layout_width="match_parent"
