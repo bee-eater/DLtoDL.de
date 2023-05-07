@@ -13,4 +13,6 @@ public class Constants {
 
     public static final String INTENT_EXTRA_FILEPATH = "FPITENT";
 
+    public static final String DIVINGLOG_FILEPATH = "/storage/emulated/0/Diving/";
+
 }

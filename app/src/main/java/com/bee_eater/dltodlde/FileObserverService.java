@@ -1,5 +1,6 @@
 package com.bee_eater.dltodlde;
 
+import static com.bee_eater.dltodlde.Constants.DIVINGLOG_FILEPATH;
 import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
 
 import android.app.Notification;
@@ -32,7 +33,7 @@ public class FileObserverService extends Service {
                 Uri file = DLtoDLdeHelper.getUriFromIntent(intent);
                 // Creating the FileObserver with the string /storage/emulated/0/Diving/Logbook.sql works
                 // Creating it with the file from the opening intent --> not working. Missing permissions??
-                mFileObserver = new FileObserver("/storage/emulated/0/Diving/") {
+                mFileObserver = new FileObserver(DIVINGLOG_FILEPATH) {
                     @Override
                     public void onEvent(int event, String path) {
                         if (event == 0x8) { // CLOSE_WRITE --> New file written and closed

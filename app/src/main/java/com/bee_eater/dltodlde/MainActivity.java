@@ -3,6 +3,7 @@ package com.bee_eater.dltodlde;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.os.Build.VERSION.SDK_INT;
 import static com.bee_eater.dltodlde.Constants.DEBUG;
+import static com.bee_eater.dltodlde.Constants.DIVINGLOG_FILEPATH;
 import static com.bee_eater.dltodlde.Constants.ERROR;
 import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
 import static com.bee_eater.dltodlde.Constants.VERBOSE;
@@ -12,6 +13,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -20,6 +22,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.os.storage.StorageManager;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -37,6 +40,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.documentfile.provider.DocumentFile;
 
 import com.bee_eater.dltodlde.DiveLogsApi.DiveLogsDive;
 
@@ -120,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         } else {
             checkIntentForSQLFile(intent);
         }
+
     }
 
     public void openFileSelectDialog() {
@@ -130,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                 .addCategory(Intent.CATEGORY_OPENABLE)
                 .setDataAndType(Uri.parse(Environment.getExternalStorageDirectory().getPath()), "file/*")
                 .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-                .putExtra("android.provider.extra.INITIAL_URI", Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADiving"));
+                .putExtra("android.provider.extra.INITIAL_URI", Uri.parse(DIVINGLOG_FILEPATH));
 
         String[] mimeTypes = new String[]{"application/x-sql"};
         if (mimeTypes.length > 0) {
@@ -138,7 +143,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         }
         someActivityResultLauncher.launch(Intent.createChooser(intent, "Select a file"));
     }
-
     // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
     ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -155,7 +159,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                     }
                 }
             });
-
 
     /**
      * If content changes (setContentView()) this listener will be executed
