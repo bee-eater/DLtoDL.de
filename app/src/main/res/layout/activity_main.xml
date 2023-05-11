@@ -207,8 +207,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="on_tglEnableFileMon_clicked"
-                android:textOn="Filemon enabled"
-                android:textOff="Filemon disabled"
+                android:textOn="@string/filemon_enabled"
+                android:textOff="@string/filemon_disabled"
                 app:cornerRadius="5dp" />
 
         </LinearLayout>

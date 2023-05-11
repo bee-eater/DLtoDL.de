@@ -30,6 +30,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
@@ -155,11 +156,17 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     public void onDestroy(){
 
         try {
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
-            broadcastIntent.setAction("RestartService");
-            broadcastIntent.setClass(this, FileObserverServiceRestarter.class);
-            this.sendBroadcast(broadcastIntent);
+            // Send broadcast to restart service, if enabled
+            if(Boolean.TRUE.equals(getFileMonService())) {
+                Intent broadcastIntent = new Intent();
+                broadcastIntent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
+                broadcastIntent.setAction("RestartService");
+                broadcastIntent.setClass(this, FileObserverServiceRestarter.class);
+                this.sendBroadcast(broadcastIntent);
+                if (DEBUG) Log.d("MAIN", "onDestroy(): Service enabled, sending broadcast!");
+            } else {
+                if (DEBUG) Log.d("MAIN", "onDestroy(): Service not enabled, doing nothing!");
+            }
         } catch (Exception e){
             if (DEBUG) Log.d("MAIN", "onDestroy(): " + e);
         }
@@ -198,6 +205,10 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             }
             return false;
         });
+
+        // Load service enabled state
+        ToggleButton tgl = findViewById(R.id.tglEnableFileMon);
+        tgl.setChecked(Boolean.TRUE.equals(getFileMonService()));
 
     }
 
@@ -452,6 +463,22 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         }
     }
 
+    private void setFileMonService(Boolean enabled){
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        SharedPreferences.Editor Ed=sp.edit();
+        Ed.putString("mon_enabled", enabled.toString());
+        Ed.apply();
+    }
+
+    private Boolean getFileMonService(){
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        String enabled = sp.getString("mon_enabled", null);
+        if (enabled != null) {
+            return Boolean.valueOf(enabled);
+        } else {
+            return null;
+        }
+    }
 
     /**
      * Load user image to ImageView
@@ -541,10 +568,10 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             // Create new FileObserver service with file
             //File file = new File(openedFile.getPath());//create path from uri
             try {
-                Intent intent = new Intent(this, FileObserverService.class);
-                intent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
-                try{ this.stopService(intent); } catch (Exception e){ if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e); }
-                this.startService(intent);
+                // Start service if enabled
+                if(Boolean.TRUE.equals(getFileMonService())) {
+                    restartFileMonService();
+                }
             } catch (Exception e){
                 if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
             }
@@ -552,6 +579,30 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             if (DEBUG) Log.d("MAIN", "setupFileMonitor(): Not setting up service! " + String.valueOf(logFolder));
         }
 
+    }
+
+    private Intent getFileMonServiceIntent(){
+        Intent intent = new Intent(this, FileObserverService.class);
+        intent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
+        return intent;
+    }
+
+    public void stopFileMonService(Intent intent){
+        try{
+            if (intent == null) {
+                this.stopService(getFileMonServiceIntent());
+            } else {
+                this.stopService(intent);
+            }
+        } catch (Exception e) {
+            if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
+        }
+    }
+
+    public void restartFileMonService(){
+        Intent intent = getFileMonServiceIntent();
+        stopFileMonService(intent);
+        this.startService(intent);
     }
 
     /**
@@ -694,6 +745,25 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                 }
             });
 
+
+    /**
+     * Event: tglEnableFileMon was clicked on GUI
+     * @param v View calling the event
+     */
+    public void on_tglEnableFileMon_clicked(View v){
+        ToggleButton tgl = findViewById(R.id.tglEnableFileMon);
+        if(tgl.isChecked()){
+            // Enabled service
+            if (DEBUG) Log.d("MAIN", "on_tglEnableFileMon_clicked(): Service enabled, starting!");
+            restartFileMonService();
+            setFileMonService(true);
+        } else {
+            // Disabled service --> Stop and save
+            if (DEBUG) Log.d("MAIN", "on_tglEnableFileMon_clicked(): Service disabled, stopping!");
+            stopFileMonService(null);
+            setFileMonService(false);
+        }
+    }
 
     /**
      * Event: btnDiveListCancel was clicked on dive list GUI

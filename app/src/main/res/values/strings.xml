@@ -6,4 +6,6 @@
     <string name="app_main_btnLogin">Save / Test</string>
     <string name="app_main_btnSelectLogFolder">Select log folder</string>
     <string name="app_main_folderinfo">The default folder for monitoring is fixed to /storage/emulated/0/Diving/. So create a folder "Diving" in your phones root memory and select this folder here to grant the app the permission to access this folder.</string>
+    <string name="filemon_enabled">Filemon enabled</string>
+    <string name="filemon_disabled">Filemon disabled</string>
 </resources>
