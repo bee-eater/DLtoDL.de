@@ -108,6 +108,17 @@
             android:paddingTop="10dp"
             android:paddingBottom="15dp">
 
+            <!-- APP INFO TEXT -->
+            <TextView
+                android:id="@+id/txtFolderInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:text="@string/app_main_folderinfo"
+                />
+
             <Button
                 android:id="@+id/btnSelectLogFolder"
                 android:layout_width="wrap_content"
@@ -178,6 +189,28 @@
                     android:textAlignment="viewStart" />
 
             </LinearLayout>
+        </LinearLayout>
+
+
+        <!-- LOGIN BUTTON -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/main_row_background"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingTop="10dp"
+            android:paddingBottom="15dp">
+
+            <ToggleButton
+                android:id="@+id/tglEnableFileMon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="on_tglEnableFileMon_clicked"
+                android:textOn="Filemon enabled"
+                android:textOff="Filemon disabled"
+                app:cornerRadius="5dp" />
+
         </LinearLayout>
 
     </LinearLayout>

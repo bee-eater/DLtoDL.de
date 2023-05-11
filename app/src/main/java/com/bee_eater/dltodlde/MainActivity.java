@@ -1,13 +1,11 @@
 package com.bee_eater.dltodlde;
 
-import static com.bee_eater.dltodlde.Constants.DEBUG;
-import static com.bee_eater.dltodlde.Constants.DIVINGLOG_FILEPATH;
-import static com.bee_eater.dltodlde.Constants.ERROR;
-import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
-import static com.bee_eater.dltodlde.Constants.VERBOSE;
+import static com.bee_eater.dltodlde.Constants.*;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -44,6 +42,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,13 +55,11 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     private final DiveLogsApi DLApi = new DiveLogsApi();
     private DivingLogConnector DLC;
-
     private ArrayList<DiveLogsDive> diveLogsDives;
-
     private ListView divesList;
     private ArrayAdapter<DivingLogDive> divesListAdapter;
     private Uri openedFile;
-
+    private Date openedFileModDate;
     private String logFolder;
 
 
@@ -86,16 +83,22 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         initStuff();
         setupGUI_Main();
 
-        // When App is opened, check if it opened a file by checking intent type (contains the mime file type)
+        // When App is re-opened, check if it opened a file by checking intent type (contains the mime file type)
         Intent intent = getIntent();
+
+        // hasExtra --> was opened by FileObserver push notification
         if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
-            //openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
-            // Since we don't have permission to directly read the file,
-            // open a file chooser with file as preset
-            DLC.LoadDiveLogFile(Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql")));
-            //openFileSelectDialog();
+            openDefaultLogbook();
+
+        // Check if sql file was opened?
+        } else if (checkIntentForSQLFile(intent)) {
+            // File is opened in function... nop...
+
+        // Else compare last mod date and current mod date and show popup if file changed...
         } else {
-            checkIntentForSQLFile(intent);
+            if (checkLogBookModDate()){
+                askReopenLogbookDialog();
+            }
         }
 
         // Setup stuff
@@ -116,48 +119,13 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         // Was opened by notification
         if (intent.hasExtra(INTENT_EXTRA_FILEPATH)){
-            //openedFile = DLtoDLdeHelper.getUriFromIntent(intent);
-            // Since we don't have permission to directly read the file,
-            // open a file chooser with file as preset
-            DLC.LoadDiveLogFile(Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql")));
-            //openFileSelectDialog();
+            openDefaultLogbook();
         } else {
             checkIntentForSQLFile(intent);
         }
 
     }
 
-    public void openFileSelectDialog() {
-
-        Intent intent = new Intent()
-                .setType("application/*")
-                .setAction(Intent.ACTION_OPEN_DOCUMENT)
-                .addCategory(Intent.CATEGORY_OPENABLE)
-                .setDataAndType(Uri.parse(Environment.getExternalStorageDirectory().getPath()), "file/*")
-                .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-                .putExtra("android.provider.extra.INITIAL_URI", Uri.parse(DIVINGLOG_FILEPATH));
-
-        String[] mimeTypes = new String[]{"application/x-sql"};
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
-        someActivityResultLauncher.launch(Intent.createChooser(intent, "Select a file"));
-    }
-    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
-    ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        // There are no request codes
-                        Intent data = result.getData();
-                        assert data != null;
-                        openedFile = data.getData();
-                        if(DLC != null) {
-                            DLC.LoadDiveLogFile(openedFile);
-                        }
-                    }
-                }
-            });
 
     /**
      * If content changes (setContentView()) this listener will be executed
@@ -238,19 +206,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         setupFileMonitor();
     }
 
-    /**
-     * Update content and visibility of log folder text output field
-     */
-    private void updateTxtLogFolder(){
-        TextView tvwLogFolder = findViewById(R.id.txtLogFolder);
-        tvwLogFolder.setText(logFolder);
-        if (logFolder == null || logFolder == ""){
-            tvwLogFolder.setVisibility(View.GONE);
-        } else {
-            tvwLogFolder.setVisibility(View.VISIBLE);
-        }
-    }
-
 
     /**
      * Function that set's up the list showing the dives to select for upload
@@ -272,6 +227,96 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         DLC = new DivingLogConnector(this);
         // Assign progress bar from GUI so progress can be shown by connector instance
         DLC.setGuiConnector(findViewById(R.id.prbDLCFileLoading), findViewById(R.id.txtProgressNr), findViewById(R.id.txtProgressPercentage));
+    }
+
+
+    /**
+     * Update content and visibility of log folder text output field
+     */
+    private void updateTxtLogFolder(){
+        TextView tvwLogFolder = findViewById(R.id.txtLogFolder);
+        tvwLogFolder.setText(logFolder);
+        if (logFolder == null || logFolder.equals("")){
+            tvwLogFolder.setVisibility(View.GONE);
+        } else {
+            tvwLogFolder.setVisibility(View.VISIBLE);
+        }
+    }
+
+
+    /**
+     * Load default logbook from fixed file path (to avoid permission issues)
+     */
+    private void openDefaultLogbook(){
+        // Use fixed file here since with content Uri we don't have permission!
+        Uri file = Uri.fromFile(new File(DIVINGLOG_FILEPATH + "Logbook.sql"));
+        DLC.LoadDiveLogFile(file);
+        setLastOpenedFile(file);
+    }
+
+
+    /**
+     * Check logbook file for changed modification date
+     */
+    private Boolean checkLogBookModDate(){
+
+        openedFile = getLastOpenedFile();
+        if(openedFile != null){
+            openedFileModDate = getLastOpenedFileModDate();
+            if(openedFileModDate != null) {
+                Date currMod = getLogBookModDate();
+                if (currMod != null) {
+                    return !currMod.equals(openedFileModDate);
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+    }
+
+
+    /**
+     *
+     * @return
+     */
+    private void askReopenLogbookDialog(){
+
+        DialogInterface.OnClickListener dialogClickListener = (dialog, which) -> {
+            switch (which){
+                case DialogInterface.BUTTON_POSITIVE:
+                    openDefaultLogbook();
+                    break;
+
+                case DialogInterface.BUTTON_NEGATIVE:
+                    //nop
+                    break;
+            }
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("It seems like the Logbook was updated! Do you want to reopen the default file \"" + DIVINGLOG_FILE + "\"?").setPositiveButton("Yes", dialogClickListener)
+                .setNegativeButton("No", dialogClickListener).show();
+    }
+
+
+    private Date getLogBookModDate(){
+        try {
+            return new Date(new File(DIVINGLOG_FILE).lastModified());
+            /* Doesn't work if file wasn't opened by ACTION_OPEN_DOCUMENT because of permissions...
+            DocumentFile df = DocumentFile.fromSingleUri(this, openedFile);
+            Date lastModDate = new Date(df.lastModified());
+            Log.i("MAIN", "File last modified " + lastModDate.toString());
+            return lastModDate;
+             */
+        } catch (Exception e){
+            Log.e("MAIN", "getLogBookModDate(): " + e);
+            return null;
+        }
     }
 
 
@@ -331,14 +376,72 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
 
     /**
-     * Function saves selected log folder
-     * @param folder Folder from selector
+     * Function loads selected log folder
      */
     private Uri getLogFolder(){
         SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
         logFolder = sp.getString("log_folder", null);
         if (logFolder != null) {
             return Uri.parse(logFolder);
+        } else {
+            return null;
+        }
+    }
+
+
+    /**
+     * Save uri of last opened file to shared pref
+     * @param file last opened file
+     */
+    private void setLastOpenedFile(Uri file){
+
+        openedFile = file;
+        setLastOpenedFileModDate(getLogBookModDate());
+
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        SharedPreferences.Editor Ed=sp.edit();
+        Ed.putString("last_file", file.toString());
+        Ed.apply();
+    }
+
+
+    /**
+     * Load last opened file from shared pref
+     * @return Returns Uri of last opened file
+     */
+    private Uri getLastOpenedFile(){
+        // Fixed file because of permission issues when using content uri...
+        return Uri.fromFile(new File(DIVINGLOG_FILE));
+    }
+
+
+    /**
+     * Save modification date of last opened file to shared pref
+     * @param date Date to save
+     */
+    private void setLastOpenedFileModDate(Date date){
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT);
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        SharedPreferences.Editor Ed=sp.edit();
+        Ed.putString("last_mod", dateFormat.format(date));
+        Ed.apply();
+    }
+
+
+    /**
+     * Load modification date of last opened file to shared pref
+     * @return
+     */
+    private Date getLastOpenedFileModDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT);
+        SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
+        String lastMod = sp.getString("last_mod", null);
+        if (lastMod != null) {
+            try {
+                return dateFormat.parse(lastMod);
+            } catch (Exception e){
+                return null;
+            }
         } else {
             return null;
         }
@@ -364,7 +467,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      * Function that checks the open / resume intent for a sql file and calls the loading function
      * @param intent Intent from the calling instance
      */
-    private void checkIntentForSQLFile(Intent intent){
+    private Boolean checkIntentForSQLFile(Intent intent){
         String intentType = intent.getType();
         if (Objects.equals(intentType, "application/x-sql")){
 
@@ -373,11 +476,17 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
             try {
                 DLC.LoadDiveLogFile(file);
                 openedFile = file;
+                setLastOpenedFile(openedFile);
+                setLastOpenedFileModDate(getLogBookModDate());
+                return true;
             } catch (Exception e) {
                 if (ERROR) Log.e("MAIN", e.toString());
                 Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
+                return true;
             }
 
+        } else {
+            return false;
         }
     }
 

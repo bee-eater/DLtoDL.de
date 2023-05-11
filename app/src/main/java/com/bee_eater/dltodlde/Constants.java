@@ -14,5 +14,7 @@ public class Constants {
     public static final String INTENT_EXTRA_FILEPATH = "FPITENT";
 
     public static final String DIVINGLOG_FILEPATH = "/storage/emulated/0/Diving/";
+    public static final String DIVINGLOG_FILE = DIVINGLOG_FILEPATH + "Logbook.sql";
+    public static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
 }
