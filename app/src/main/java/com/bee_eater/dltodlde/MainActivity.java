@@ -1,6 +1,12 @@
 package com.bee_eater.dltodlde;
 
-import static com.bee_eater.dltodlde.Constants.*;
+import static com.bee_eater.dltodlde.Constants.DATETIME_FORMAT;
+import static com.bee_eater.dltodlde.Constants.DEBUG;
+import static com.bee_eater.dltodlde.Constants.DIVINGLOG_FILE;
+import static com.bee_eater.dltodlde.Constants.DIVINGLOG_FILEPATH;
+import static com.bee_eater.dltodlde.Constants.ERROR;
+import static com.bee_eater.dltodlde.Constants.INTENT_EXTRA_FILEPATH;
+import static com.bee_eater.dltodlde.Constants.VERBOSE;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -12,7 +18,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.StrictMode;
 import android.os.storage.StorageManager;
 import android.util.Log;
@@ -46,6 +51,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -59,7 +65,6 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     private ListView divesList;
     private ArrayAdapter<DivingLogDive> divesListAdapter;
     private Uri openedFile;
-    private Date openedFileModDate;
     private String logFolder;
 
 
@@ -262,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         openedFile = getLastOpenedFile();
         if(openedFile != null){
-            openedFileModDate = getLastOpenedFileModDate();
+            Date openedFileModDate = getLastOpenedFileModDate();
             if(openedFileModDate != null) {
                 Date currMod = getLogBookModDate();
                 if (currMod != null) {
@@ -281,8 +286,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
 
     /**
-     *
-     * @return
+     * Open a file dialog and ask user to reopen default file, since modification date changed...
      */
     private void askReopenLogbookDialog(){
 
@@ -301,6 +305,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage("It seems like the Logbook was updated! Do you want to reopen the default file \"" + DIVINGLOG_FILE + "\"?").setPositiveButton("Yes", dialogClickListener)
                 .setNegativeButton("No", dialogClickListener).show();
+
     }
 
 
@@ -420,7 +425,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      * @param date Date to save
      */
     private void setLastOpenedFileModDate(Date date){
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT);
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT, Locale.GERMAN);
         SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
         SharedPreferences.Editor Ed=sp.edit();
         Ed.putString("last_mod", dateFormat.format(date));
@@ -430,10 +435,10 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     /**
      * Load modification date of last opened file to shared pref
-     * @return
+     * @return Returns time of last modification
      */
     private Date getLastOpenedFileModDate() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT);
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT, Locale.GERMAN);
         SharedPreferences sp=getSharedPreferences("AppSettings", MODE_PRIVATE);
         String lastMod = sp.getString("last_mod", null);
         if (lastMod != null) {
@@ -532,13 +537,13 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      */
     public void setupFileMonitor () {
 
-        if(logFolder != null && logFolder != ""){
+        if(logFolder != null && !logFolder.equals("")){
             // Create new FileObserver service with file
             //File file = new File(openedFile.getPath());//create path from uri
             try {
                 Intent intent = new Intent(this, FileObserverService.class);
                 intent.putExtra(INTENT_EXTRA_FILEPATH, logFolder);
-                try{ this.stopService(intent); } catch (Exception e){  }
+                try{ this.stopService(intent); } catch (Exception e){ if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e); }
                 this.startService(intent);
             } catch (Exception e){
                 if (DEBUG) Log.d("MAIN", "setupFileMonitor(): " + e);
@@ -656,7 +661,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         StorageManager sm = (StorageManager) getSystemService(Context.STORAGE_SERVICE);
 
         Intent intent = sm.getPrimaryStorageVolume().createOpenDocumentTreeIntent();
-        Uri uri = null;
+        Uri uri;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             uri = intent.getParcelableExtra("android.provider.extra.INITIAL_URI", Uri.class);
         } else {
@@ -675,21 +680,17 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
     ActivityResultLauncher<Intent> getLogFolderLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        // There are no request codes
-                        Intent data = result.getData();
-                        assert data != null;
-                        Uri folder = data.getData();
-                        Log.d("TAG", "onActivityResult: " + folder.getPath());
-                        final int currFlags = data.getFlags();
-                        getContentResolver().takePersistableUriPermission(folder, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        setLogFolder(folder);
-                        updateTxtLogFolder();
-                        setupFileMonitor();
-                    }
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    // There are no request codes
+                    Intent data = result.getData();
+                    assert data != null;
+                    Uri folder = data.getData();
+                    Log.d("TAG", "onActivityResult: " + folder.getPath());
+                    getContentResolver().takePersistableUriPermission(folder, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    setLogFolder(folder);
+                    updateTxtLogFolder();
+                    setupFileMonitor();
                 }
             });
 
