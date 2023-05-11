@@ -182,7 +182,7 @@ public class DiveLogsApi {
 
             assert response.body() != null;
             String rsp = response.body().string();
-            if (DEBUG) Log.d("DLAPI", rsp);
+            if (VERBOSE) Log.v("DLAPI", rsp);
             return rsp;
 
         } catch (Exception e){

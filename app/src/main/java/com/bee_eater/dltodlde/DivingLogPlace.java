@@ -1,22 +1,20 @@
 package com.bee_eater.dltodlde;
 
-import java.sql.Blob;
-
 public class DivingLogPlace extends MemberSetter {
-    public Integer ID;
-    public Integer CountryID;
-    public String Place;
-    public Integer Rating;
-    public Double MaxDepth;
-    public String Lat;
-    public String Lon;
-    public String MapPath;
-    public byte[] Map;
-    public String Comments;
-    public String UUID;
-    public String Updated;
-    public Integer Water;
-    public String Altitude;
-    public String WaterName;
-    public String Difficulty;
+    public Integer id;
+    public Integer countryid;
+    public String place;
+    public Integer rating;
+    public Double maxdepth;
+    public String lat;
+    public String lon;
+    public String mappath;
+    public byte[] map;
+    public String comments;
+    public String uuid;
+    public String updated;
+    public Integer water;
+    public String altitude;
+    public String watername;
+    public String difficulty;
 }

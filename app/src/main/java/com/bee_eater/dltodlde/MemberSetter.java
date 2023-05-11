@@ -7,13 +7,13 @@ import java.lang.reflect.Field;
 
 public class MemberSetter {
     public void setMemberByName(String name, Object value) throws NoSuchFieldException, IllegalAccessException, InvalidObjectException {
-        Field field = findUnderlying(getClass(), name);
+        Field field = findUnderlying(getClass(), name.toLowerCase());
         if (field != null) {
             if(value != null) {
                 if (field.getType().equals(value.getClass())) {
                     field.set(this, value);
                 } else {
-                    throw new InvalidObjectException("Found member " + name + " of type " + field.getType() + ", got object: " + value.getClass());
+                    throw new InvalidObjectException("Found member " + name.toLowerCase() + " of type " + field.getType() + ", got object: " + value.getClass());
                 }
             } else {
                 field.set(this, null);
@@ -27,7 +27,7 @@ public class MemberSetter {
         Class<?> current = clazz;
         do {
             try {
-                return current.getDeclaredField(fieldName);
+                return current.getDeclaredField(fieldName.toLowerCase());
             } catch(Exception e) {}
         } while((current = current.getSuperclass()) != null);
         return null;

@@ -1,8 +1,6 @@
 package com.bee_eater.dltodlde;
 
 import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -90,17 +88,17 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
         viewHolder.chkIsSelected.setChecked(dive.isSelected);
         viewHolder.chkIsSelected.setOnClickListener(this);
         viewHolder.chkIsSelected.setTag(position);
-        viewHolder.txtTitle.setText(dive.Number + " - " + dive.City + ": " + dive.Place);
-        viewHolder.txtDate.setText(dive.Divedate);
-        int minutes = dive.Divetime.intValue();
-        int seconds = (int)((dive.Divetime - minutes)*60);
+        viewHolder.txtTitle.setText(dive.number + " - " + dive.city + ": " + dive.place);
+        viewHolder.txtDate.setText(dive.divedate);
+        int minutes = dive.divetime.intValue();
+        int seconds = (int)((dive.divetime - minutes)*60);
         String dt = String.valueOf(minutes);
         dt += ":";
         if (seconds < 10)
             dt += "0";
         dt += seconds + " min";
         viewHolder.txtDiveTime.setText(dt);
-        viewHolder.txtDiveDepth.setText(String.format("%.2f", dive.Depth) + " m");
+        viewHolder.txtDiveDepth.setText(String.format("%.2f", dive.depth) + " m");
         viewHolder.txtAddInfo.setText(dive.ListInfoText);
 
         // Return the completed view to render on screen

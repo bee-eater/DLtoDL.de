@@ -1,9 +1,7 @@
 package com.bee_eater.dltodlde;
 
-import static com.bee_eater.dltodlde.Constants.ERROR;
-import static com.bee_eater.dltodlde.Constants.VERBOSE;
+import static com.bee_eater.dltodlde.Constants.*;
 
-import android.content.UriPermission;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -75,6 +73,11 @@ public class DivingLogConnector {
             try {
                 setGuiVisibility(View.VISIBLE);
                 DLDives = DivingLog_LoadDiveLogFile(tmpDBFile);
+                if (DLDives != null){
+                    if (DEBUG) Log.d("DLCONN", "LoadDiveLogFile.run(): " + DLDives.size());
+                } else {
+                    if (ERROR) Log.e("DLCONN", "LoadDiveLogFile.run(): null");
+                }
                 setGuiVisibility(View.GONE);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -103,7 +106,7 @@ public class DivingLogConnector {
      */
     public void copyDataBase(Uri file) {
 
-        if (VERBOSE) Log.v("DLCONN", "New database is being copied to device!");
+        if (VERBOSE) Log.v("DLCONN", "copyDataBase(): New database is being copied to device!");
         byte[] buffer = new byte[1024];
         OutputStream fsOutput;
         int length;
@@ -118,11 +121,11 @@ public class DivingLogConnector {
             fsOutput.close();
             fsOutput.flush();
             fsInput.close();
-            if (VERBOSE) Log.v("DLCONN", "New database has been copied to device!");
+            if (VERBOSE) Log.d("DLCONN", "copyDataBase(): New database has been copied to device!");
         }
         catch(Exception e)
         {
-            e.printStackTrace();
+            if (ERROR) Log.e("DLCONN", "copyDataBase(): Exception: " + e);
         }
 
     }
@@ -134,9 +137,9 @@ public class DivingLogConnector {
         File fDelete = new File(tmpDBFile);
         if (fDelete.exists()) {
             if (fDelete.delete()) {
-                if (VERBOSE) Log.v("DLCONN", "Database deleted from app storage!");
+                if (VERBOSE) Log.v("DLCONN", "deleteDataBase(): Database deleted from app storage!");
             } else {
-                if (VERBOSE) Log.v("DLCONN", "File not deleted!");
+                if (VERBOSE) Log.v("DLCONN", "deleteDataBase(): File not deleted!");
             }
         }
     }
@@ -181,7 +184,7 @@ public class DivingLogConnector {
                         case Cursor.FIELD_TYPE_FLOAT: colValue = tres.getDouble(i); break;
                         case Cursor.FIELD_TYPE_STRING: colValue = tres.getString(i); break;
                         default:
-                            if (VERBOSE) Log.v("DLCONN", "Found column type :: " + Integer.toString(colType));
+                            if (VERBOSE) Log.v("DLCONN", "DivingLog_LoadDiveLogFile(): Found column type :: " + Integer.toString(colType));
                             colValue = "ERR";
                     }
 
@@ -189,9 +192,9 @@ public class DivingLogConnector {
                     try {
                         tank.setMemberByName(colName, colValue);
                     } catch (NoSuchFieldException | IllegalAccessException | InvalidObjectException e) {
-                        if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
+                        if (ERROR) Log.e("DLCONN", "DivingLog_LoadDiveLogFile(): Error adding value to dive object: " + e);
                     }
-                    if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
+                    if (VERBOSE) Log.v("DLCONN","DivingLog_LoadDiveLogFile(): " + colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
                 }
                 Tanks.add(tank);
                 tres.moveToNext();
@@ -231,7 +234,7 @@ public class DivingLogConnector {
                         case Cursor.FIELD_TYPE_STRING: colValue = pres.getString(i); break;
                         case Cursor.FIELD_TYPE_BLOB: colValue = pres.getBlob(i); break;
                         default:
-                            if (VERBOSE) Log.v("DLCONN", "Found column type :: " + Integer.toString(colType));
+                            if (VERBOSE) Log.v("DLCONN", "DivingLog_LoadDiveLogFile(): Found column type :: " + Integer.toString(colType));
                             colValue = "ERR";
                     }
 
@@ -239,9 +242,9 @@ public class DivingLogConnector {
                     try {
                         place.setMemberByName(colName, colValue);
                     } catch (NoSuchFieldException | IllegalAccessException | InvalidObjectException e) {
-                        if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
+                        if (ERROR) Log.e("DLCONN", "DivingLog_LoadDiveLogFile(): Error adding value to dive object: " + e);
                     }
-                    if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
+                    if (VERBOSE) Log.v("DLCONN","DivingLog_LoadDiveLogFile(): " + colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
                 }
                 Places.add(place);
                 pres.moveToNext();
@@ -282,7 +285,7 @@ public class DivingLogConnector {
                         case Cursor.FIELD_TYPE_FLOAT: colValue = res.getDouble(i); break;
                         case Cursor.FIELD_TYPE_STRING: colValue = res.getString(i); break;
                         default:
-                            if (VERBOSE) Log.v("DLCONN", "Found column type :: " + Integer.toString(colType));
+                            if (VERBOSE) Log.v("DLCONN", "DivingLog_LoadDiveLogFile(): Found column type :: " + Integer.toString(colType));
                             colValue = "ERR";
                     }
 
@@ -290,30 +293,30 @@ public class DivingLogConnector {
                     try {
                         dive.setMemberByName(colName, colValue);
                     } catch (NoSuchFieldException | IllegalAccessException | InvalidObjectException e) {
-                        if (ERROR) Log.e("DLCONN", "Error adding value to dive object: " + e);
+                        if (ERROR) Log.e("DLCONN", "DivingLog_LoadDiveLogFile(): Error adding value to dive object: " + e);
                     }
-                    if (VERBOSE) Log.v("DLCONN",colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
+                    if (VERBOSE) Log.v("DLCONN","DivingLog_LoadDiveLogFile(): " + colName + " :: " + Integer.toString(colType) + " :: " + String.valueOf(colValue));
                 }
 
                 // Add tanks to dive
-                Tanks.stream().filter(o -> o.LogID.equals(dive.ID)).forEach(
+                Tanks.stream().filter(o -> o.logid.equals(dive.id)).forEach(
                         o -> dive.Tanks.add(o)
                 );
 
                 // Add place to dive
-                Places.stream().filter(o -> o.ID.equals(dive.PlaceID)).forEach(
+                Places.stream().filter(o -> o.id.equals(dive.placeid)).forEach(
                         o -> dive.PlaceInfo = o
                 );
 
                 // Convert date and entry time to LocalDateTime variable (for later comparison to DiveLogs.de list)
                 try {
-                    String tmpDT = dive.Divedate + " " + dive.Entrytime;
+                    String tmpDT = dive.divedate + " " + dive.entrytime;
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                     dive.DiveDateDT = LocalDateTime.parse(tmpDT, dtf);
                     // Only add dive if dt conversion was successful
                     DLDives.add(dive);
                 } catch (Exception e) {
-                    if (ERROR) Log.e("DLCONN", "Exception getting divetime: " + e);
+                    if (ERROR) Log.e("DLCONN", "DivingLog_LoadDiveLogFile(): Exception getting divetime: " + e);
                     Toast.makeText(main, e.toString(), Toast.LENGTH_LONG).show();
                 }
                 res.moveToNext();

@@ -16,8 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -41,69 +39,68 @@ public class DivingLogDive extends DivingLogTank {
 
     // Other stuff used in app
     public Boolean isSelected = Boolean.FALSE;
-
     public Integer DiveLogsIndex = -1;
     public String ListInfoText = "";
+    public LocalDateTime DiveDateDT;
 
     // DivingLog parameters read from sql
-    public Integer Number;
-    public String Divedate;
-    public LocalDateTime DiveDateDT;
-    public String Entrytime;
-    public String Surfint;
-    public String Country;
-    public Integer CountryID;
-    public String City;
-    public Integer CityID;
-    public String Place;
-    public Integer PlaceID;
-    public Double Divetime;
-    public Double Depth;
-    public String Buddy;
-    public String BuddyIDs;
-    public String Signature;
-    public String Comments;
-    public Integer Water;
-    public Integer Entry;
-    public String Divetype;
-    public String Gas;
-    public String Weather;
-    public String UWCurrent;
-    public String Surface;
-    public Integer Visibility;
-    public Double Airtemp;
-    public Double Watertemp;
-    public Double Weight;
-    public Integer Deco;
-    public String Decostops;
-    public Integer Rep;
-    public String Altitude;
-    public String Divesuit;
-    public String Computer;
-    public Integer ProfileInt;
-    public String Profile;
-    public String UsedEquip;
-    public String Profile2;
-    public String Profile3;
-    public Double DepthAvg;
-    public String UUID;
-    public String Updated;
-    public String Profile4;
-    public String Profile5;
-    public Integer RepNumber;
-    public String VisHor;
-    public String VisVer;
-    public String CNS;
-    public String PGStart;
-    public String PGEnd;
-    public String Divemaster;
-    public String Boat;
-    public Integer Rating;
-    public Integer ShopID;
-    public Integer TripID;
-    public Integer utcOffset;
-    public Double DesaturationTime;
-    public Double NoFlyTime;
+    public Integer number;
+    public String divedate;
+    public String entrytime;
+    public String surfint;
+    public String country;
+    public Integer countryid;
+    public String city;
+    public Integer cityid;
+    public String place;
+    public Integer placeid;
+    public Double divetime;
+    public Double depth;
+    public String buddy;
+    public String buddyids;
+    public String signature;
+    public String comments;
+    public Integer water;
+    public Integer entry;
+    public String divetype;
+    public String gas;
+    public String weather;
+    public String uwcurrent;
+    public String surface;
+    public Integer visibility;
+    public Double airtemp;
+    public Double watertemp;
+    public Double weight;
+    public Integer deco;
+    public String decostops;
+    public Integer rep;
+    public String altitude;
+    public String divesuit;
+    public String computer;
+    public Integer profileint;
+    public String profile;
+    public String usedequip;
+    public String profile2;
+    public String profile3;
+    public Double depthavg;
+    public String uuid;
+    public String updated;
+    public String profile4;
+    public String profile5;
+    public Integer repnumber;
+    public String vishor;
+    public String visver;
+    public String cns;
+    public String pgstart;
+    public String pgend;
+    public String divemaster;
+    public String boat;
+    public Integer rating;
+    public Integer shopid;
+    public Integer tripid;
+    public Integer utcoffset;
+    public Double desaturationtime;
+    public Double noflytime;
     public ArrayList<DivingLogTank> Tanks = new ArrayList<>();
 
     public DivingLogPlace PlaceInfo;
@@ -111,76 +108,76 @@ public class DivingLogDive extends DivingLogTank {
     @NonNull
     @Override
     public String toString() {
-        return "{ \"ID\": " + String.valueOf(this.ID) + "," +
-                " \"Number\": " + String.valueOf(this.Number) + "," +
-                " \"Divedate\": " + ((this.Divedate == null) ? "null" : ("\"" + String.valueOf(this.Divedate) + "\",")) +
-                " \"Entrytime\": " + ((this.Entrytime == null) ? "null" : ("\"" + String.valueOf(this.Entrytime) + "\"")) + "," +
-                " \"Surfint\": " + ((this.Surfint == null) ? "null" : ("\"" + String.valueOf(this.Surfint) + "\"")) + "," +
-                " \"Country\": " + ((this.Country == null) ? "null" : ("\"" + String.valueOf(this.Country) + "\"")) + "," +
-                " \"CountryID\": " + String.valueOf(this.CountryID) + "," +
-                " \"City\": " + ((this.City == null) ? "null" : ("\"" + String.valueOf(this.City) + "\"")) + "," +
-                " \"CityID\": " + String.valueOf(this.CityID) + "," +
-                " \"Place\": " + ((this.Place == null) ? "null" : ("\"" + String.valueOf(this.Place) + "\"")) + "," +
-                " \"PlaceID\": " + String.valueOf(this.PlaceID) + "," +
-                " \"Divetime\": " + String.valueOf(this.Divetime) + "," +
-                " \"Depth\": " + String.valueOf(this.Depth) + "," +
-                " \"Buddy\": " + ((this.Buddy == null) ? "null" : ("\"" + String.valueOf(this.Buddy) + "\"")) + "," +
-                " \"BuddyIDs\": " + ((this.BuddyIDs == null) ? "null" : ("\"" + String.valueOf(this.BuddyIDs) + "\"")) + "," +
-                " \"Signature\": " + ((this.Signature == null) ? "null" : ("\"" + String.valueOf(this.Signature) + "\"")) + "," +
-                " \"Comments\": " + ((this.Comments == null) ? "null" : ("\"" + String.valueOf(this.Comments) + "\"")) + "," +
-                " \"Water\": " + String.valueOf(this.Water) + "," +
-                " \"Entry\": " + String.valueOf(this.Entry) + "," +
-                " \"Divetype\": " + ((this.Divetype == null) ? "null" : ("\"" + String.valueOf(this.Divetype) + "\"")) + "," +
-                " \"Tanktype\": " + String.valueOf(this.Tanktype) + "," +
-                " \"Tanksize\": " + String.valueOf(this.Tanksize) + "," +
-                " \"PresS\": " + String.valueOf(this.PresS) + "," +
-                " \"PresE\": " + String.valueOf(this.PresE) + "," +
-                " \"Gas\": " + ((this.Gas == null) ? "null" : ("\"" + String.valueOf(this.Gas) + "\"")) + "," +
-                " \"Weather\": " + ((this.Weather == null) ? "null" : ("\"" + String.valueOf(this.Weather) + "\"")) + "," +
-                " \"UWCurrent\": " + ((this.UWCurrent == null) ? "null" : ("\"" + String.valueOf(this.UWCurrent) + "\"")) + "," +
-                " \"Surface\": " + ((this.Surface == null) ? "null" : ("\"" + String.valueOf(this.Surface) + "\"")) + "," +
-                " \"Visibility\": " + String.valueOf(this.Visibility) + "," +
-                " \"Airtemp\": " + String.valueOf(this.Airtemp) + "," +
-                " \"Watertemp\": " + String.valueOf(this.Watertemp) + "," +
-                " \"Weight\": " + String.valueOf(this.Weight) + "," +
-                " \"Deco\": " + String.valueOf(this.Deco) + "," +
-                " \"Decostops\": " + ((this.Decostops == null) ? "null" : ("\"" + String.valueOf(this.Decostops) + "\"")) + "," +
-                " \"Rep\": " + String.valueOf(this.Rep) + "," +
-                " \"Altitude\": " + ((this.Altitude == null) ? "null" : ("\"" + String.valueOf(this.Altitude) + "\"")) + "," +
-                " \"Divesuit\": " + ((this.Divesuit == null) ? "null" : ("\"" + String.valueOf(this.Divesuit) + "\"")) + "," +
-                " \"Computer\": " + ((this.Computer == null) ? "null" : ("\"" + String.valueOf(this.Computer) + "\"")) + "," +
-                " \"ProfileInt\": " + String.valueOf(this.ProfileInt) + "," +
-                " \"Profile\": " + ((this.Profile == null) ? "null" : ("\"" + String.valueOf(this.Profile) + "\"")) + "," +
-                " \"UsedEquip\": " + ((this.UsedEquip == null) ? "null" : ("\"" + String.valueOf(this.UsedEquip) + "\"")) + "," +
-                " \"PresW\": " + String.valueOf(this.PresW) + "," +
-                " \"Profile2\": " + ((this.Profile2 == null) ? "null" : ("\"" + String.valueOf(this.Profile2) + "\"")) + "," +
-                " \"Profile3\": " + ((this.Profile3 == null) ? "null" : ("\"" + String.valueOf(this.Profile3) + "\"")) + "," +
-                " \"DepthAvg\": " + String.valueOf(this.DepthAvg) + "," +
-                " \"UUID\": " + ((this.UUID == null) ? "null" : ("\"" + String.valueOf(this.UUID) + "\"")) + "," +
-                " \"Updated\": " + ((this.Updated == null) ? "null" : ("\"" + String.valueOf(this.Updated) + "\"")) + "," +
-                " \"Profile4\": " + ((this.Profile4 == null) ? "null" : ("\"" + String.valueOf(this.Profile4) + "\"")) + "," +
-                " \"Profile5\": " + ((this.Profile5 == null) ? "null" : ("\"" + String.valueOf(this.Profile5) + "\"")) + "," +
-                " \"RepNumber\": " + String.valueOf(this.RepNumber) + "," +
-                " \"VisHor\": " + ((this.VisHor == null) ? "null" : ("\"" + String.valueOf(this.VisHor) + "\"")) + "," +
-                " \"VisVer\": " + ((this.VisVer == null) ? "null" : ("\"" + String.valueOf(this.VisVer) + "\"")) + "," +
-                " \"CNS\": " + ((this.CNS == null) ? "null" : ("\"" + String.valueOf(this.CNS) + "\"")) + "," +
-                " \"PGStart\": " + ((this.PGStart == null) ? "null" : ("\"" + String.valueOf(this.PGStart) + "\"")) + "," +
-                " \"PGEnd\": " + ((this.PGEnd == null) ? "null" : ("\"" + String.valueOf(this.PGEnd) + "\"")) + "," +
-                " \"Divemaster\": " + ((this.Divemaster == null) ? "null" : ("\"" + String.valueOf(this.Divemaster) + "\"")) + "," +
-                " \"Boat\": " + ((this.Boat == null) ? "null" : ("\"" + String.valueOf(this.Boat) + "\"")) + "," +
-                " \"Rating\": " + String.valueOf(this.Rating) + "," +
-                " \"O2\": " + String.valueOf(this.O2) + "," +
-                " \"He\": " + String.valueOf(this.He) + "," +
-                " \"DblTank\": " + String.valueOf(this.DblTank) + "," +
-                " \"SupplyType\": " + String.valueOf(this.SupplyType) + "," +
-                " \"MinPPO2\": " + String.valueOf(this.MinPPO2) + "," +
-                " \"MaxPPO2\": " + String.valueOf(this.MaxPPO2) + "," +
-                " \"ShopID\": " + String.valueOf(this.ShopID) + "," +
-                " \"TripID\": " + String.valueOf(this.TripID) + "," +
-                " \"utcOffset\": " + String.valueOf(this.utcOffset) + "," +
-                " \"DesaturationTime\": " + String.valueOf(this.DesaturationTime) + "," +
-                " \"NoFlyTime\": " + String.valueOf(this.NoFlyTime) + "," +
-                " \"ScrubberTime\": " + String.valueOf(this.ScrubberTime) +
+        return "{ \"ID\": " + String.valueOf(this.id) + "," +
+                " \"Number\": " + String.valueOf(this.number) + "," +
+                " \"Divedate\": " + ((this.divedate == null) ? "null" : ("\"" + String.valueOf(this.divedate) + "\",")) +
+                " \"Entrytime\": " + ((this.entrytime == null) ? "null" : ("\"" + String.valueOf(this.entrytime) + "\"")) + "," +
+                " \"Surfint\": " + ((this.surfint == null) ? "null" : ("\"" + String.valueOf(this.surfint) + "\"")) + "," +
+                " \"Country\": " + ((this.country == null) ? "null" : ("\"" + String.valueOf(this.country) + "\"")) + "," +
+                " \"CountryID\": " + String.valueOf(this.countryid) + "," +
+                " \"City\": " + ((this.city == null) ? "null" : ("\"" + String.valueOf(this.city) + "\"")) + "," +
+                " \"CityID\": " + String.valueOf(this.cityid) + "," +
+                " \"Place\": " + ((this.place == null) ? "null" : ("\"" + String.valueOf(this.place) + "\"")) + "," +
+                " \"PlaceID\": " + String.valueOf(this.placeid) + "," +
+                " \"Divetime\": " + String.valueOf(this.divetime) + "," +
+                " \"Depth\": " + String.valueOf(this.depth) + "," +
+                " \"Buddy\": " + ((this.buddy == null) ? "null" : ("\"" + String.valueOf(this.buddy) + "\"")) + "," +
+                " \"BuddyIDs\": " + ((this.buddyids == null) ? "null" : ("\"" + String.valueOf(this.buddyids) + "\"")) + "," +
+                " \"Signature\": " + ((this.signature == null) ? "null" : ("\"" + String.valueOf(this.signature) + "\"")) + "," +
+                " \"Comments\": " + ((this.comments == null) ? "null" : ("\"" + String.valueOf(this.comments) + "\"")) + "," +
+                " \"Water\": " + String.valueOf(this.water) + "," +
+                " \"Entry\": " + String.valueOf(this.entry) + "," +
+                " \"Divetype\": " + ((this.divetype == null) ? "null" : ("\"" + String.valueOf(this.divetype) + "\"")) + "," +
+                " \"Tanktype\": " + String.valueOf(this.tanktype) + "," +
+                " \"Tanksize\": " + String.valueOf(this.tanksize) + "," +
+                " \"PresS\": " + String.valueOf(this.press) + "," +
+                " \"PresE\": " + String.valueOf(this.prese) + "," +
+                " \"Gas\": " + ((this.gas == null) ? "null" : ("\"" + String.valueOf(this.gas) + "\"")) + "," +
+                " \"Weather\": " + ((this.weather == null) ? "null" : ("\"" + String.valueOf(this.weather) + "\"")) + "," +
+                " \"UWCurrent\": " + ((this.uwcurrent == null) ? "null" : ("\"" + String.valueOf(this.uwcurrent) + "\"")) + "," +
+                " \"Surface\": " + ((this.surface == null) ? "null" : ("\"" + String.valueOf(this.surface) + "\"")) + "," +
+                " \"Visibility\": " + String.valueOf(this.visibility) + "," +
+                " \"Airtemp\": " + String.valueOf(this.airtemp) + "," +
+                " \"Watertemp\": " + String.valueOf(this.watertemp) + "," +
+                " \"Weight\": " + String.valueOf(this.weight) + "," +
+                " \"Deco\": " + String.valueOf(this.deco) + "," +
+                " \"Decostops\": " + ((this.decostops == null) ? "null" : ("\"" + String.valueOf(this.decostops) + "\"")) + "," +
+                " \"Rep\": " + String.valueOf(this.rep) + "," +
+                " \"Altitude\": " + ((this.altitude == null) ? "null" : ("\"" + String.valueOf(this.altitude) + "\"")) + "," +
+                " \"Divesuit\": " + ((this.divesuit == null) ? "null" : ("\"" + String.valueOf(this.divesuit) + "\"")) + "," +
+                " \"Computer\": " + ((this.computer == null) ? "null" : ("\"" + String.valueOf(this.computer) + "\"")) + "," +
+                " \"ProfileInt\": " + String.valueOf(this.profileint) + "," +
+                " \"Profile\": " + ((this.profile == null) ? "null" : ("\"" + String.valueOf(this.profile) + "\"")) + "," +
+                " \"UsedEquip\": " + ((this.usedequip == null) ? "null" : ("\"" + String.valueOf(this.usedequip) + "\"")) + "," +
+                " \"PresW\": " + String.valueOf(this.presw) + "," +
+                " \"Profile2\": " + ((this.profile2 == null) ? "null" : ("\"" + String.valueOf(this.profile2) + "\"")) + "," +
+                " \"Profile3\": " + ((this.profile3 == null) ? "null" : ("\"" + String.valueOf(this.profile3) + "\"")) + "," +
+                " \"DepthAvg\": " + String.valueOf(this.depthavg) + "," +
+                " \"UUID\": " + ((this.uuid == null) ? "null" : ("\"" + String.valueOf(this.uuid) + "\"")) + "," +
+                " \"Updated\": " + ((this.updated == null) ? "null" : ("\"" + String.valueOf(this.updated) + "\"")) + "," +
+                " \"Profile4\": " + ((this.profile4 == null) ? "null" : ("\"" + String.valueOf(this.profile4) + "\"")) + "," +
+                " \"Profile5\": " + ((this.profile5 == null) ? "null" : ("\"" + String.valueOf(this.profile5) + "\"")) + "," +
+                " \"RepNumber\": " + String.valueOf(this.repnumber) + "," +
+                " \"VisHor\": " + ((this.vishor == null) ? "null" : ("\"" + String.valueOf(this.vishor) + "\"")) + "," +
+                " \"VisVer\": " + ((this.visver == null) ? "null" : ("\"" + String.valueOf(this.visver) + "\"")) + "," +
+                " \"CNS\": " + ((this.cns == null) ? "null" : ("\"" + String.valueOf(this.cns) + "\"")) + "," +
+                " \"PGStart\": " + ((this.pgstart == null) ? "null" : ("\"" + String.valueOf(this.pgstart) + "\"")) + "," +
+                " \"PGEnd\": " + ((this.pgend == null) ? "null" : ("\"" + String.valueOf(this.pgend) + "\"")) + "," +
+                " \"Divemaster\": " + ((this.divemaster == null) ? "null" : ("\"" + String.valueOf(this.divemaster) + "\"")) + "," +
+                " \"Boat\": " + ((this.boat == null) ? "null" : ("\"" + String.valueOf(this.boat) + "\"")) + "," +
+                " \"Rating\": " + String.valueOf(this.rating) + "," +
+                " \"O2\": " + String.valueOf(this.o2) + "," +
+                " \"He\": " + String.valueOf(this.he) + "," +
+                " \"DblTank\": " + String.valueOf(this.dbltank) + "," +
+                " \"SupplyType\": " + String.valueOf(this.supplytype) + "," +
+                " \"MinPPO2\": " + String.valueOf(this.minppo2) + "," +
+                " \"MaxPPO2\": " + String.valueOf(this.maxppo2) + "," +
+                " \"ShopID\": " + String.valueOf(this.shopid) + "," +
+                " \"TripID\": " + String.valueOf(this.tripid) + "," +
+                " \"utcOffset\": " + String.valueOf(this.utcoffset) + "," +
+                " \"DesaturationTime\": " + String.valueOf(this.desaturationtime) + "," +
+                " \"NoFlyTime\": " + String.valueOf(this.noflytime) + "," +
+                " \"ScrubberTime\": " + String.valueOf(this.scrubbertime) +
                 "}";
     }
 
@@ -215,16 +212,16 @@ public class DivingLogDive extends DivingLogTank {
 
             // Dive time in seconds [s]
             el = doc.createElement("DIVETIMESEC");
-            el.setTextContent(String.valueOf((int)(this.Divetime * 60)));
+            el.setTextContent(String.valueOf((int)(this.divetime * 60)));
             rootElement.appendChild(el);
 
             // Surface time [s]
             el = doc.createElement("SURFACETIME");
             int surfint = 0;
-            if (this.Surfint != null){
+            if (this.surfint != null){
                 try {
-                    String hours = this.Surfint.split(":")[0];
-                    String minutes = this.Surfint.split(":")[1];
+                    String hours = this.surfint.split(":")[0];
+                    String minutes = this.surfint.split(":")[1];
                     surfint = Integer.parseInt(hours)*3600 + Integer.parseInt(minutes)*60;
                 } catch (Exception e){
                     // nop
@@ -237,24 +234,24 @@ public class DivingLogDive extends DivingLogTank {
 
             // Depth (max) [m]
             el = doc.createElement("MAXDEPTH");
-            if (this.Depth != null)
-                el.setTextContent(String.format("%.1f", this.Depth));
+            if (this.depth != null)
+                el.setTextContent(String.format("%.1f", this.depth));
             rootElement.appendChild(el);
 
             // Depth (avg) [m]
             el = doc.createElement("MEANDEPTH");
-            if (this.DepthAvg != null)
-                el.setTextContent(String.format("%.1f", this.DepthAvg));
+            if (this.depthavg != null)
+                el.setTextContent(String.format("%.1f", this.depthavg));
             rootElement.appendChild(el);
 
             // Location (CDATA!)
             el = doc.createElement("LOCATION");
             tmpStr = "";
-            if (this.Country != null){
-                tmpStr += this.Country + ", ";
+            if (this.country != null){
+                tmpStr += this.country + ", ";
             }
-            if (this.City != null){
-                tmpStr += this.City;
+            if (this.city != null){
+                tmpStr += this.city;
             }
             cdata = doc.createCDATASection(tmpStr);
             el.appendChild(cdata);
@@ -262,25 +259,25 @@ public class DivingLogDive extends DivingLogTank {
 
             // Site (CDATA!)
             el = doc.createElement("SITE");
-            if (this.Place != null) {
-                cdata = doc.createCDATASection(this.Place);
+            if (this.place != null) {
+                cdata = doc.createCDATASection(this.place);
                 el.appendChild(cdata);
             }
             rootElement.appendChild(el);
 
             // Weather (CDATA!)
             el = doc.createElement("WEATHER");
-            if (this.Weather != null) {
-                cdata = doc.createCDATASection(this.Weather);
+            if (this.weather != null) {
+                cdata = doc.createCDATASection(this.weather);
                 el.appendChild(cdata);
             }
             rootElement.appendChild(el);
 
             // Visibility (CDATA!)
             el = doc.createElement("WATERVIZIBILITY");
-            if (this.Visibility != null) {
-                if(this.Visibility < WaterVisibility.size()) {
-                    cdata = doc.createCDATASection(WaterVisibility.get(this.Visibility));
+            if (this.visibility != null) {
+                if(this.visibility < WaterVisibility.size()) {
+                    cdata = doc.createCDATASection(WaterVisibility.get(this.visibility));
                     el.appendChild(cdata);
                 }
             }
@@ -288,14 +285,14 @@ public class DivingLogDive extends DivingLogTank {
 
             // Air temperature
             el = doc.createElement("AIRTEMP");
-            if (this.Airtemp != null)
-                el.setTextContent(String.format("%.1f", this.Airtemp));
+            if (this.airtemp != null)
+                el.setTextContent(String.format("%.1f", this.airtemp));
             rootElement.appendChild(el);
 
             // Water temp max depth
             el = doc.createElement("WATERTEMPMAXDEPTH");
-            if (this.Watertemp != null)
-                el.setTextContent(String.format("%.1f", this.Watertemp));
+            if (this.watertemp != null)
+                el.setTextContent(String.format("%.1f", this.watertemp));
             rootElement.appendChild(el);
 
             // Water temp end
@@ -303,24 +300,24 @@ public class DivingLogDive extends DivingLogTank {
 
             // Partner (Buddies...) (CDATA!)
             el = doc.createElement("PARTNER");
-            if (this.Buddy != null) {
-                cdata = doc.createCDATASection(this.Buddy);
+            if (this.buddy != null) {
+                cdata = doc.createCDATASection(this.buddy);
                 el.appendChild(cdata);
             }
             rootElement.appendChild(el);
 
             // Boat name (CDATA!)
             el = doc.createElement("BOATNAME");
-            if (this.Boat != null) {
-                cdata = doc.createCDATASection(this.Boat);
+            if (this.boat != null) {
+                cdata = doc.createCDATASection(this.boat);
                 el.appendChild(cdata);
             }
             rootElement.appendChild(el);
 
             // Weight [kg]
             el = doc.createElement("WEIGHT");
-            if (this.Weight != null)
-                el.setTextContent(String.format("%.2f", this.Weight));
+            if (this.weight != null)
+                el.setTextContent(String.format("%.2f", this.weight));
             rootElement.appendChild(el);
 
             addTank(doc,rootElement,this);
@@ -338,8 +335,8 @@ public class DivingLogDive extends DivingLogTank {
 
             // Notes (CDATA!)
             el = doc.createElement("LOGNOTES");
-            if (this.Comments != null) {
-                cdata = doc.createCDATASection(this.Comments);
+            if (this.comments != null) {
+                cdata = doc.createCDATASection(this.comments);
                 el.appendChild(cdata);
             }
             rootElement.appendChild(el);
@@ -348,7 +345,7 @@ public class DivingLogDive extends DivingLogTank {
             // Longitude
             try {
                 GeoConverter geo = new GeoConverter();
-                double[] latLon = geo.convert(this.PlaceInfo.Lat + " " + this.PlaceInfo.Lon);
+                double[] latLon = geo.convert(this.PlaceInfo.lat + " " + this.PlaceInfo.lon);
                 el = doc.createElement("LAT");
                 el.setTextContent(String.valueOf((double)(latLon[0])));
                 rootElement.appendChild(el);
@@ -364,17 +361,17 @@ public class DivingLogDive extends DivingLogTank {
 
             // Sample interval [s] (for following depth profile)
             el = doc.createElement("SAMPLEINTERVAL");
-            if (this.ProfileInt != null)
-                el.setTextContent(String.valueOf(this.ProfileInt));
+            if (this.profileint != null)
+                el.setTextContent(String.valueOf(this.profileint));
             rootElement.appendChild(el);
 
             // <SAMPLE><DEPTH>value</DEPTH></SAMPLE>
-            if (this.ProfileInt != null) {
-                if (this.Profile != null){
+            if (this.profileint != null) {
+                if (this.profile != null){
                     List<String> DepthProfile = new ArrayList<>();
                     int index = 0;
-                    while (index < this.Profile.length()) {
-                        DepthProfile.add(this.Profile.substring(index, Math.min(index + 12,this.Profile.length())));
+                    while (index < this.profile.length()) {
+                        DepthProfile.add(this.profile.substring(index, Math.min(index + 12,this.profile.length())));
                         index += 12;
                     }
                     // Get depths from strings [001100000000] = 1.1m
@@ -423,9 +420,9 @@ public class DivingLogDive extends DivingLogTank {
 
         // Cylinder description (CDATA!)
         el = doc.createElement("CYLINDERDESCRIPTION");
-        if (t.Tanktype  != null) {
-            if(t.Tanktype < TankType.size()) {
-                cdata = doc.createCDATASection(TankType.get(t.Tanktype));
+        if (t.tanktype != null) {
+            if(t.tanktype < TankType.size()) {
+                cdata = doc.createCDATASection(TankType.get(t.tanktype));
                 el.appendChild(cdata);
             }
         }
@@ -433,44 +430,44 @@ public class DivingLogDive extends DivingLogTank {
 
         // Double tank?
         el = doc.createElement("DBLTANK");
-        if (t.DblTank != null)
-            el.setTextContent(String.valueOf(t.DblTank));
+        if (t.dbltank != null)
+            el.setTextContent(String.valueOf(t.dbltank));
         parent.appendChild(el);
 
         // Cylinder size [l]
         el = doc.createElement("CYLINDERSIZE");
-        if (t.Tanksize != null)
-            el.setTextContent(String.format("%.2f", t.Tanksize));
+        if (t.tanksize != null)
+            el.setTextContent(String.format("%.2f", t.tanksize));
         parent.appendChild(el);
 
         // Cylinder start pressure [bar]
         el = doc.createElement("CYLINDERSTARTPRESSURE");
-        if (t.PresS != null)
-            el.setTextContent(String.format("%.2f", t.PresS));
+        if (t.press != null)
+            el.setTextContent(String.format("%.2f", t.press));
         parent.appendChild(el);
 
         // Cylinder end pressure [bar]
         el = doc.createElement("CYLINDERENDPRESSURE");
-        if (t.PresE != null)
-            el.setTextContent(String.format("%.2f", t.PresE));
+        if (t.prese != null)
+            el.setTextContent(String.format("%.2f", t.prese));
         parent.appendChild(el);
 
         // Working pressure [bar]
         el = doc.createElement("WORKINGPRESSURE");
-        if (t.PresW != null)
-            el.setTextContent(String.format("%.2f", t.PresW));
+        if (t.presw != null)
+            el.setTextContent(String.format("%.2f", t.presw));
         parent.appendChild(el);
 
         // O2 percentage
         el = doc.createElement("O2PCT");
-        if (t.O2 != null)
-            el.setTextContent(String.format("%.2f", t.O2));
+        if (t.o2 != null)
+            el.setTextContent(String.format("%.2f", t.o2));
         parent.appendChild(el);
 
         // H2 percentage
         el = doc.createElement("HEPCT");
-        if (t.He != null)
-            el.setTextContent(String.format("%.2f", t.He));
+        if (t.he != null)
+            el.setTextContent(String.format("%.2f", t.he));
         parent.appendChild(el);
     }
 
