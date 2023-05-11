@@ -101,7 +101,7 @@ public class DivingLogDive extends DivingLogTank {
     public Integer Rating;
     public Integer ShopID;
     public Integer TripID;
-    public Integer UtcOffset;
+    public Integer utcOffset;
     public Double DesaturationTime;
     public Double NoFlyTime;
     public ArrayList<DivingLogTank> Tanks = new ArrayList<>();
@@ -177,7 +177,7 @@ public class DivingLogDive extends DivingLogTank {
                 " \"MaxPPO2\": " + String.valueOf(this.MaxPPO2) + "," +
                 " \"ShopID\": " + String.valueOf(this.ShopID) + "," +
                 " \"TripID\": " + String.valueOf(this.TripID) + "," +
-                " \"utcOffset\": " + String.valueOf(this.UtcOffset) + "," +
+                " \"utcOffset\": " + String.valueOf(this.utcOffset) + "," +
                 " \"DesaturationTime\": " + String.valueOf(this.DesaturationTime) + "," +
                 " \"NoFlyTime\": " + String.valueOf(this.NoFlyTime) + "," +
                 " \"ScrubberTime\": " + String.valueOf(this.ScrubberTime) +

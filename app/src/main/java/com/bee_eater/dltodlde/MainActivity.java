@@ -14,12 +14,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.StrictMode;
 import android.os.storage.StorageManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -35,6 +39,8 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.bee_eater.dltodlde.DiveLogsApi.DiveLogsDive;
 
@@ -46,6 +52,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -108,6 +115,10 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         // Setup stuff
         setupFolderMonitoring();
 
+        // Request push permissions
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS},101);
+        }
     }
 
 
@@ -318,6 +329,19 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
     }
 
 
+    /**
+     * Check if all files permission is set
+     */
+    private void checkAllFilesPermission(){
+        if (!Environment.isExternalStorageManager()) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+            Uri uri = Uri.fromParts("package", getPackageName(), null);
+            intent.setData(uri);
+            startActivity(intent);
+        }
+    }
+
+
     private Date getLogBookModDate(){
         try {
             return new Date(new File(DIVINGLOG_FILE).lastModified());
@@ -483,7 +507,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      */
     private void LoadUserImage(String URL){
         try {
-            InputStream in = new java.net.URL(URL).openStream();
+            InputStream in = new URL(URL).openStream();
             Bitmap bmp = BitmapFactory.decodeStream(in);
             ImageView imgUser = findViewById(R.id.imgUser);
             imgUser.setImageBitmap(bmp);
@@ -711,7 +735,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
 
         Intent intent = sm.getPrimaryStorageVolume().createOpenDocumentTreeIntent();
         Uri uri;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             uri = intent.getParcelableExtra("android.provider.extra.INITIAL_URI", Uri.class);
         } else {
             uri = intent.getParcelableExtra("android.provider.extra.INITIAL_URI");
@@ -725,8 +749,8 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         Log.d("TAG", "uri: " + uri.toString());
 
         getLogFolderLauncher.launch(intent);
-    }
 
+    }
     ActivityResultLauncher<Intent> getLogFolderLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -740,6 +764,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
                     setLogFolder(folder);
                     updateTxtLogFolder();
                     setupFileMonitor();
+                    checkAllFilesPermission();
                 }
             });
 

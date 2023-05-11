@@ -62,7 +62,7 @@ public class FileObserverService extends Service {
 
         int importance = NotificationManager.IMPORTANCE_HIGH;
         NotificationChannel notificationChannel = new
-                NotificationChannel(NOTIFICATION_CHANNEL_ID, "NOTIFICATION_CHANNEL_NAME" , importance) ;
+                NotificationChannel(NOTIFICATION_CHANNEL_ID, "Logbook updates" , importance) ;
         notificationChannel.enableLights(true) ;
         notificationChannel.setLightColor(Color.RED) ;
         notificationChannel.enableVibration(true) ;
