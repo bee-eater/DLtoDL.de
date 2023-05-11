@@ -1,6 +1,7 @@
 package com.bee_eater.dltodlde;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,8 @@ import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.TextView;
+
+import androidx.core.content.ContextCompat;
 
 import java.util.List;
 
@@ -79,9 +82,9 @@ public class DiveSelectionListAdapter extends ArrayAdapter<DivingLogDive> implem
 
         // Color if already found!
         if (dive.DiveLogsIndex != -1){ // green -> already uploaded?!
-            viewHolder.txtAddInfo.setTextColor(Color.GREEN);
+            viewHolder.txtAddInfo.setTextColor(ContextCompat.getColor(getContext(), R.color.listViewAddInfoGreenDayNight));
         } else { // blue -> not uploaded yet?!
-            viewHolder.txtAddInfo.setTextColor(Color.BLUE);
+            viewHolder.txtAddInfo.setTextColor(ContextCompat.getColor(getContext(), R.color.listViewAddInfoBlueDayNight));
         }
 
         viewHolder.chkIsSelected.setChecked(dive.isSelected);

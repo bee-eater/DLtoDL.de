@@ -8,4 +8,5 @@
     <string name="app_main_folderinfo">The default folder for monitoring is fixed to /storage/emulated/0/Diving/. So create a folder "Diving" in your phones root memory and select this folder here to grant the app the permission to access this folder.</string>
     <string name="filemon_enabled">Filemon enabled</string>
     <string name="filemon_disabled">Filemon disabled</string>
+    <string name="filemon_description">File monitoring</string>
 </resources>

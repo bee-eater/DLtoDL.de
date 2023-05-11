@@ -28,12 +28,10 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -207,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
         });
 
         // Load service enabled state
-        ToggleButton tgl = findViewById(R.id.tglEnableFileMon);
+        Switch tgl = findViewById(R.id.tglEnableFileMon);
         tgl.setChecked(Boolean.TRUE.equals(getFileMonService()));
 
     }
@@ -751,7 +749,7 @@ public class MainActivity extends AppCompatActivity implements DivingLogFileDone
      * @param v View calling the event
      */
     public void on_tglEnableFileMon_clicked(View v){
-        ToggleButton tgl = findViewById(R.id.tglEnableFileMon);
+        Switch tgl = findViewById(R.id.tglEnableFileMon);
         if(tgl.isChecked()){
             // Enabled service
             if (DEBUG) Log.d("MAIN", "on_tglEnableFileMon_clicked(): Service enabled, starting!");

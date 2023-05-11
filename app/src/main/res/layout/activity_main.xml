@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorBackground"
     android:id="@+id/activity_main"
     tools:context=".MainActivity">
 
@@ -15,6 +16,7 @@
 
         <!-- APP INFO TEXT -->
         <TextView
+            style="@style/linearLayoutStyle"
             android:id="@+id/txtInfo"
             android:layout_width="match_parent"
             android:layout_height="151dp"
@@ -22,19 +24,19 @@
             android:paddingLeft="20dp"
             android:paddingRight="20dp"
             android:text="@string/app_main_info"
-            android:background="@drawable/main_row_background"
+            android:textColor="@color/textColorDayNight"
             />
 
 
         <!-- USERNAME / PASSWORD / USER IMAGE -->
         <LinearLayout
+            style="@style/linearLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="15dp"
             android:paddingTop="10dp"
             android:orientation="horizontal"
             android:weightSum="2"
-            android:background="@drawable/main_row_background"
             >
 
             <LinearLayout
@@ -54,6 +56,7 @@
                     android:hint="@string/divelogs_de_username"
                     android:inputType="text"
                     android:minHeight="64dp"
+                    android:textColor="@color/textColorDayNight"
                     android:text="" />
 
                 <EditText
@@ -64,6 +67,7 @@
                     android:ems="10"
                     android:hint="@string/divelogs_de_password"
                     android:inputType="textPassword"
+                    android:textColor="@color/textColorDayNight"
                     android:minHeight="64dp" />
 
             </LinearLayout>
@@ -81,9 +85,9 @@
 
         <!-- LOGIN BUTTON -->
         <LinearLayout
+            style="@style/linearLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/main_row_background"
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingTop="10dp"
@@ -95,14 +99,16 @@
                 android:layout_height="wrap_content"
                 android:onClick="on_btnDLLogin_clicked"
                 android:text="@string/app_main_btnLogin"
+                android:textColor="@color/btnTextColorDayNight"
                 app:cornerRadius="5dp" />
+
         </LinearLayout>
 
         <!-- SELECT FOLDER -->
         <LinearLayout
+            style="@style/linearLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/main_row_background"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="10dp"
@@ -117,14 +123,17 @@
                 android:paddingLeft="20dp"
                 android:paddingRight="20dp"
                 android:text="@string/app_main_folderinfo"
+                android:textColor="@color/textColorDayNight"
                 />
 
             <Button
                 android:id="@+id/btnSelectLogFolder"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
                 android:onClick="on_btnSelectLogFolder_clicked"
                 android:text="@string/app_main_btnSelectLogFolder"
+                android:textColor="@color/btnTextColorDayNight"
                 app:cornerRadius="5dp" />
 
             <TextView
@@ -136,15 +145,16 @@
                 android:paddingRight="20dp"
                 android:text=""
                 android:visibility="gone"
+                android:textColor="@color/textColorDayNight"
                 />
 
         </LinearLayout>
 
         <!-- PROGRESS BAR -->
         <LinearLayout
+            style="@style/linearLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/main_row_background"
             android:orientation="vertical"
             android:paddingLeft="30dp"
             android:paddingTop="10dp"
@@ -194,21 +204,29 @@
 
         <!-- LOGIN BUTTON -->
         <LinearLayout
+            style="@style/linearLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/main_row_background"
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingTop="10dp"
             android:paddingBottom="15dp">
 
-            <ToggleButton
+            <TextView
+                android:id="@+id/txtFileMonDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filemon_description"
+                android:textColor="@color/textColorDayNight"/>
+
+            <Switch
                 android:id="@+id/tglEnableFileMon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:checked="true"
                 android:onClick="on_tglEnableFileMon_clicked"
-                android:textOn="@string/filemon_enabled"
                 android:textOff="@string/filemon_disabled"
+                android:textOn="@string/filemon_enabled"
                 app:cornerRadius="5dp" />
 
         </LinearLayout>

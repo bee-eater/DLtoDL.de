@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorBackground">#343434</color>
+    <color name="colorPrimary">#75a943</color>
+    <color name="colorPrimaryDark">#408000</color>
+    <color name="colorAccent">#277650</color>
+
+
+    <color name="textColorDayNight">#BBBFBB</color>
+    <color name="switchColorDayNight">#76B295</color>
+    <color name="diveListHeaderColor">#92C364</color>
+
+    <color name="listViewAddInfoBlueDayNight">#66BBFF</color>
+    <color name="listViewAddInfoGreenDayNight">#AAFFAA</color>
+</resources>
