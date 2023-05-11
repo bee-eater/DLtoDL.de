@@ -16,8 +16,8 @@ android {
         applicationId "com.bee_eater.dltodlde"
         minSdk 29
         targetSdk 33
-        versionCode 3
-        versionName "0.90-beta"
+        versionCode 4
+        versionName "0.92-beta"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
