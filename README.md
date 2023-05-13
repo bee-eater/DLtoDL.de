@@ -13,8 +13,9 @@ Now you can either directly open an exported Logbook.sql file from the file expl
 - Grant permissions via the button in the app
 - Select the same folder as Backup folder in DivingLog app
 
-Everytime you export your logbook a notification should pop up!
-If not, either open the app up manually and you should get a popup to reopen the file!
+Everytime you export your logbook a notification should pop up! If not, just open the app up manually and you should get a popup to reopen the file!
+
+I can't say anything about power consumption since I don't own an Android device, but if you don't want the App to run the background service for the file monitoring, you can just disable it on the main screen.
 
 ## Screenshots
 
